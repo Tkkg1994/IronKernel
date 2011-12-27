@@ -433,6 +433,8 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
 show_one(scaling_max_freq, max);
+show_one(policy_min_freq, user_policy.min);
+show_one(policy_max_freq, user_policy.max);
 
 static ssize_t show_scaling_cur_freq(
 	struct cpufreq_policy *policy, char *buf)
@@ -814,6 +816,8 @@ cpufreq_freq_attr_rw(GPU_volt_table);
 cpufreq_freq_attr_rw(GPU_gov_mif_table);
 cpufreq_freq_attr_rw(GPU_gov_int_table);
 cpufreq_freq_attr_rw(GPU_gov_cpu_table);
+cpufreq_freq_attr_ro(policy_min_freq);
+cpufreq_freq_attr_ro(policy_max_freq);
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -838,6 +842,8 @@ static struct attribute *default_attrs[] = {
 	&GPU_gov_mif_table.attr,
 	&GPU_gov_int_table.attr,
 	&GPU_gov_cpu_table.attr,
+	&policy_min_freq.attr,
+	&policy_max_freq.attr,
 	NULL
 };
 
