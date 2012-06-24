@@ -1,332 +1,78 @@
-#include <linux/errno.h>
-#include <linux/mm.h>
-#include <linux/mman.h>
-#include <linux/spinlock.h>
-#include <linux/slab.h>
-#include <linux/gcd.h>
-#include <linux/sradix-tree.h>
+#ifndef _LINUX_SRADIX_TREE_H
+#define _LINUX_SRADIX_TREE_H
 
-static inline int sradix_node_full(struct sradix_tree_root *root, struct sradix_tree_node *node)
-{
-	return node->fulls == root->stores_size || 
-		(node->height == 1 && node->count == root->stores_size);
-}
 
-/*
- *	Extend a sradix tree so it can store key @index.
- */
-static int sradix_tree_extend(struct sradix_tree_root *root, unsigned long index)
-{
+#define INIT_SRADIX_TREE(root, mask)					\
+do {									\
+	(root)->height = 0;						\
+	(root)->gfp_mask = (mask);					\
+	(root)->rnode = NULL;						\
+} while (0)
+
+#define ULONG_BITS	(sizeof(unsigned long) * 8)
+#define SRADIX_TREE_INDEX_BITS  (8 /* CHAR_BIT */ * sizeof(unsigned long))
+//#define SRADIX_TREE_MAP_SHIFT	6
+//#define SRADIX_TREE_MAP_SIZE	(1UL << SRADIX_TREE_MAP_SHIFT)
+//#define SRADIX_TREE_MAP_MASK	(SRADIX_TREE_MAP_SIZE-1)
+
+struct sradix_tree_node {
+	unsigned int	height;		/* Height from the bottom */
+	unsigned int	count;		
+	unsigned int	fulls;		/* Number of full sublevel trees */ 
+	struct sradix_tree_node *parent;
+	void *stores[0];
+};
+
+/* A simple radix tree implementation */
+struct sradix_tree_root {
+        unsigned int            height;
+        struct sradix_tree_node *rnode;
+
+	/* Where found to have available empty stores in its sublevels */
+        struct sradix_tree_node *enter_node;
+	unsigned int shift;
+	unsigned int stores_size;
+	unsigned int mask;
+	unsigned long min;	/* The first hole index */
+	unsigned long num;
+	//unsigned long *height_to_maxindex;
+
+	/* How the node is allocated and freed. */
+	struct sradix_tree_node *(*alloc)(void); 
+	void (*free)(struct sradix_tree_node *node);
+
+	/* When a new node is added and removed */
+	void (*extend)(struct sradix_tree_node *parent, struct sradix_tree_node *child);
+	void (*assign)(struct sradix_tree_node *node, unsigned index, void *item);
+	void (*rm)(struct sradix_tree_node *node, unsigned offset);
+};
+
+struct sradix_tree_path {
 	struct sradix_tree_node *node;
-	unsigned int height;
+	int offset;
+};
 
-	if (unlikely(root->rnode == NULL)) {
-		if (!(node = root->alloc()))
-			return -ENOMEM;
-
-		node->height = 1;
-		root->rnode = node;
-		root->height = 1;
-	}
-
-	/* Figure out what the height should be.  */
-	height = root->height;
-	index >>= root->shift * height;
-
-	while (index) {
-		index >>= root->shift;
-		height++;
-	}
-
-	while (height > root->height) {
-		unsigned int newheight;
-		if (!(node = root->alloc()))
-			return -ENOMEM;
-
-		/* Increase the height.  */
-		node->stores[0] = root->rnode;
-		root->rnode->parent = node;
-		if (root->extend)
-			root->extend(node, root->rnode);
-
-		newheight = root->height + 1;
-		node->height = newheight;
-		node->count = 1;
-		if (sradix_node_full(root, root->rnode))
-			node->fulls = 1;
-
-		root->rnode = node;
-		root->height = newheight;
-	}
-
-	return 0;
+static inline 
+void init_sradix_tree_root(struct sradix_tree_root *root, unsigned long shift)
+{
+	root->height = 0;
+	root->rnode = NULL;
+	root->shift = shift;
+	root->stores_size = 1UL << shift;
+	root->mask = root->stores_size - 1;
 }
 
-/*
- * Search the next item from the current node, that is not NULL
- * and can satify root->iter().
- */
-void *sradix_tree_next(struct sradix_tree_root *root,
+
+extern void *sradix_tree_next(struct sradix_tree_root *root,
 		       struct sradix_tree_node *node, unsigned long index,
-		       int (*iter)(void *item, unsigned long height))
-{
-	unsigned long offset;
-	void *item;
+		       int (*iter)(void *, unsigned long));
 
-	if (unlikely(node == NULL)) {
-		node = root->rnode;
-		for (offset = 0; offset < root->stores_size; offset++) {
-			item = node->stores[offset];
-			if (item && (!iter || iter(item, node->height)))
-				break;
-		}
+extern int sradix_tree_enter(struct sradix_tree_root *root, void **item, int num);
 
-		if (unlikely(offset >= root->stores_size))
-			return NULL;
+extern void sradix_tree_delete_from_leaf(struct sradix_tree_root *root, 
+			struct sradix_tree_node *node, unsigned long index);
 
-		if (node->height == 1)
-			return item;
-		else
-			goto go_down;
-	}
+extern void *sradix_tree_lookup(struct sradix_tree_root *root, unsigned long index);
 
-	while (node) {
-		offset = (index & root->mask) + 1;					
-		for (;offset < root->stores_size; offset++) {
-			item = node->stores[offset];
-			if (item && (!iter || iter(item, node->height)))
-				break;
-		}
+#endif /* _LINUX_SRADIX_TREE_H */
 
-		if (offset < root->stores_size)
-			break;
-
-		node = node->parent;
-		index >>= root->shift;
-	}
-
-	if (!node)
-		return NULL;
-
-	while (node->height > 1) {
-go_down:
-		node = item;
-		for (offset = 0; offset < root->stores_size; offset++) {
-			item = node->stores[offset];
-			if (item && (!iter || iter(item, node->height)))
-				break;
-		}
-
-		if (unlikely(offset >= root->stores_size))
-			return NULL;
-	}
-
-	BUG_ON(offset > root->stores_size);
-
-	return item;
-}
-
-/*
- * Blindly insert the item to the tree. Typically, we reuse the
- * first empty store item.
- */
-int sradix_tree_enter(struct sradix_tree_root *root, void **item, int num)
-{
-	unsigned long index;
-	unsigned int height;
-	struct sradix_tree_node *node, *tmp;
-	int offset, offset_saved;
-	void **store = NULL;
-	int error, i, j, shift;
-
-
-	node = root->rnode;
-
-redo:
-	index = root->min;
-	if (node == NULL || (index >> (root->shift * root->height))
-	    || sradix_node_full(root, root->rnode)) {
-		error = sradix_tree_extend(root, index);
-		if (error)
-			return error;
-
-		node = root->rnode;
-	}
-
-	height = node->height;
-	shift = (height - 1) * root->shift;
-	offset = (index >> shift) & root->mask;
-	while (shift > 0) {
-		offset_saved = offset;
-		for (; offset < root->stores_size; offset++) {
-			store = &node->stores[offset];
-			tmp = *store;
-
-			if (!tmp || !sradix_node_full(root, tmp))
-				break;
-		}
-		if (offset != offset_saved) {
-			index += (offset - offset_saved) << shift;
-			index &= ~((1UL << shift) - 1);
-		}
-
-		if (!tmp) {
-			if (!(tmp = root->alloc()))
-				return -ENOMEM;
-
-			tmp->height = shift / root->shift;
-			*store = tmp;
-			tmp->parent = node;
-			node->count++;
-			if (root->extend)
-				root->extend(node, tmp);
-		}
-
-		node = tmp;
-		shift -= root->shift;
-		offset = (index >> shift) & root->mask;
-	}
-
-	BUG_ON(node->height != 1);
-
-
-	store = &node->stores[offset];
-	for (i = 0, j = 0;
-	      j < root->stores_size - node->count && 
-	      i < root->stores_size - offset && j < num; i++) {
-		if (!store[i]) {
-			store[i] = item[j];
-			if (root->assign)
-				root->assign(node, index + i, item[j]);
-			j++;
-		}
-	}
-
-	node->count += j;
-	num -= j;
-	root->min = index + i;
-
-	while (sradix_node_full(root, node)) {
-		node = node->parent;
-		if (!node)
-			break;
-
-		node->fulls++;
-	}
-
-	if (unlikely(!node)) {
-		/* All nodes are full */
-		root->min = 1 << (root->height * root->shift);
-	}
-
-	if (num) {
-		item += j;
-		goto redo;
-	}
-
-	return 0;
-}
-
-
-/**
- *	sradix_tree_shrink    -    shrink height of a sradix tree to minimal
- *	@root		sradix tree root
- */
-static inline void sradix_tree_shrink(struct sradix_tree_root *root)
-{
-	/* try to shrink tree height */
-	while (root->height > 1) {
-		struct sradix_tree_node *to_free = root->rnode;
-
-		/*
-		 * The candidate node has more than one child, or its child
-		 * is not at the leftmost store, we cannot shrink.
-		 */
-		if (to_free->count != 1 || !to_free->stores[0])
-			break;
-
-		root->rnode = to_free->stores[0];
-		root->rnode->parent = NULL;
-		root->height--;
-		root->free(to_free);
-	}
-}
-
-/*
- * Del the item on the known leaf node and index
- */
-void sradix_tree_delete_from_leaf(struct sradix_tree_root *root, 
-				  struct sradix_tree_node *node, unsigned long index)
-{
-	unsigned int offset;
-	struct sradix_tree_node *start, *end;
-
-	BUG_ON(node->height != 1);
-
-	start = node;
-	while (node && !(--node->count))
-		node = node->parent;
-
-	end = node;
-	if (!node) {
-		root->rnode = NULL;
-		root->height = 0;
-		root->min = 0;
-		goto free_nodes;
-	} else {
-		offset = (index >> (root->shift * (node->height - 1))) & root->mask;
-		if (root->rm)
-			root->rm(node, offset);
-		node->stores[offset] = NULL;
-	}
-
-	if (start != end) {
-		sradix_tree_shrink(root);
-
-free_nodes:
-		do {
-			node = start;
-			root->free(node);
-			start = start->parent;
-		} while (start != end);
-	} else if (node->count == root->stores_size - 1) {
-		/* It WAS a full leaf node. Update the ancestors */
-		node = node->parent;
-		while (node) {
-			node->fulls--;
-			if (node->fulls != root->stores_size - 1)
-				break;
-
-			node = node->parent;
-		}
-	}
-
-	/* If cannot search the min ? */
-	if (root->min > index)
-		root->min = index;
-}
-
-void *sradix_tree_lookup(struct sradix_tree_root *root, unsigned long index)
-{
-	unsigned int height, offset;
-	struct sradix_tree_node *node;
-	int shift;
-
-	node = root->rnode;
-	if (node == NULL || (index >> (root->shift * root->height)))
-		return NULL;
-
-	height = root->height;
-	shift = (height - 1) * root->shift;
-
-	do {
-		offset = (index >> shift) & root->mask;
-		node = node->stores[offset];
-		if (!node)
-			return NULL;
-
-		shift -= root->shift;
-	} while (shift >= 0);
-
-	return node;
-}
