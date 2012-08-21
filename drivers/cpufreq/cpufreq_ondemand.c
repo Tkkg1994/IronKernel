@@ -968,7 +968,7 @@ static inline void dbs_timer_init(struct cpu_dbs_info_s *dbs_info)
 
 	dbs_info->sample_type = DBS_NORMAL_SAMPLE;
 	ondemand_wq = create_freezable_workqueue("ondemand_wq");
-	INIT_DELAYED_WORK(&dbs_info->work, do_dbs_timer);
+	INIT_DEFERRABLE_WORK(&dbs_info->work, do_dbs_timer);
 	/* Set 60secs delay for the booting current peak adjustment. */
 	if (boot_delay[dbs_info->cpu]) {
 		boot_delay[dbs_info->cpu] = false;
