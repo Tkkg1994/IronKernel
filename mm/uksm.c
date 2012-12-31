@@ -1392,15 +1392,22 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
 	spinlock_t *ptl;
 	int swapped;
 	int err = -EFAULT;
+	unsigned long mmun_start;	/* For mmu_notifiers */
+	unsigned long mmun_end;		/* For mmu_notifiers */
 
 	addr = page_address_in_vma(page, vma);
 	if (addr == -EFAULT)
 		goto out;
 
 	BUG_ON(PageTransCompound(page));
+
+	mmun_start = addr;
+	mmun_end   = addr + PAGE_SIZE;
+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+
 	ptep = page_check_address(page, mm, addr, &ptl, 0);
 	if (!ptep)
-		goto out;
+		goto out_mn;
 
 	if (old_pte)
 		*old_pte = *ptep;
@@ -1438,6 +1445,8 @@ static int write_protect_page(struct vm_area_struct *vma, struct page *page,
 
 out_unlock:
 	pte_unmap_unlock(ptep, ptl);
+out_mn:
+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
 out:
 	return err;
 }
@@ -1470,6 +1479,8 @@ static int replace_page(struct vm_area_struct *vma, struct page *page,
 
 	unsigned long addr;
 	int err = MERGE_ERR_PGERR;
+	unsigned long mmun_start;	/* For mmu_notifiers */
+	unsigned long mmun_end;		/* For mmu_notifiers */
 
 	addr = page_address_in_vma(page, vma);
 	if (addr == -EFAULT)
@@ -1488,10 +1499,14 @@ static int replace_page(struct vm_area_struct *vma, struct page *page,
 	if (!pmd_present(*pmd))
 		goto out;
 
+	mmun_start = addr;
+	mmun_end   = addr + PAGE_SIZE;
+	mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
+
 	ptep = pte_offset_map_lock(mm, pmd, addr, &ptl);
 	if (!pte_same(*ptep, orig_pte)) {
 		pte_unmap_unlock(ptep, ptl);
-		goto out;
+		goto out_mn;
 	}
 
 	flush_cache_page(vma, addr, pte_pfn(*ptep));
@@ -1516,6 +1531,8 @@ static int replace_page(struct vm_area_struct *vma, struct page *page,
 
 	pte_unmap_unlock(ptep, ptl);
 	err = 0;
+out_mn:
+	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
 out:
 	return err;
 }
@@ -4652,8 +4669,9 @@ again:
 			struct vm_area_struct *vma;
 
 			anon_vma_lock(anon_vma);
-			list_for_each_entry(vmac, &anon_vma->head,
-					    same_anon_vma) {
+			anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
+						       0, ULONG_MAX) {
+
 				vma = vmac->vma;
 				address = get_rmap_addr(rmap_item);
 
@@ -4718,8 +4736,8 @@ again:
 			struct vm_area_struct *vma;
 
 			anon_vma_lock(anon_vma);
-			list_for_each_entry(vmac, &anon_vma->head,
-					    same_anon_vma) {
+			anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
+						       0, ULONG_MAX) {
 				vma = vmac->vma;
 				address = get_rmap_addr(rmap_item);
 
@@ -4780,8 +4798,8 @@ again:
 			struct vm_area_struct *vma;
 
 			anon_vma_lock(anon_vma);
-			list_for_each_entry(vmac, &anon_vma->head,
-					    same_anon_vma) {
+			anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
+						       0, ULONG_MAX) {
 				vma = vmac->vma;
 				address = get_rmap_addr(rmap_item);
 
@@ -5536,7 +5554,7 @@ struct page *ksm_does_need_to_copy(struct page *page,
 		SetPageSwapBacked(new_page);
 		__set_page_locked(new_page);
 
-		if (page_evictable(new_page, vma))
+		if (!mlocked_vma_newpage(vma, new_page))
 			lru_cache_add_lru(new_page, LRU_ACTIVE_ANON);
 		else
 			add_page_to_unevictable_list(new_page);
