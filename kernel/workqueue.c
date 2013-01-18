@@ -46,7 +46,7 @@
 
 #include <mach/sec_debug.h>
 
-#include "workqueue_sched.h"
+#include "workqueue_internal.h"
 
 enum {
 	/* global_cwq flags */
