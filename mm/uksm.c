@@ -180,7 +180,6 @@ static int is_full_zero(const void *s1, size_t len)
 }
 #endif
 
-#define U64_MAX		(~((u64)0))
 #define UKSM_RUNG_ROUND_FINISHED  (1 << 0)
 #define TIME_RATIO_SCALE	10000
 
@@ -1604,7 +1603,7 @@ static inline int check_collision(struct rmap_item *rmap_item,
 static struct page *page_trans_compound_anon(struct page *page)
 {
 	if (PageTransCompound(page)) {
-		struct page *head = compound_trans_head(page);
+		struct page *head = compound_head(page);
 		/*
 		 * head may actually be splitted and freed from under
 		 * us but it's ok here.
@@ -4645,76 +4644,7 @@ static int uksm_scan_thread(void *nothing)
 	return 0;
 }
 
-int page_referenced_ksm(struct page *page, struct mem_cgroup *memcg,
-			unsigned long *vm_flags)
-{
-	struct stable_node *stable_node;
-	struct node_vma *node_vma;
-	struct rmap_item *rmap_item;
-	unsigned int mapcount = page_mapcount(page);
-	int referenced = 0;
-	int search_new_forks = 0;
-	unsigned long address;
-
-	VM_BUG_ON(!PageKsm(page));
-	VM_BUG_ON(!PageLocked(page));
-
-	stable_node = page_stable_node(page);
-	if (!stable_node)
-		return 0;
-
-
-again:
-	hlist_for_each_entry(node_vma, &stable_node->hlist, hlist) {
-		hlist_for_each_entry(rmap_item, &node_vma->rmap_hlist, hlist) {
-			struct anon_vma *anon_vma = rmap_item->anon_vma;
-			struct anon_vma_chain *vmac;
-			struct vm_area_struct *vma;
-
-			anon_vma_lock_read(anon_vma);
-			anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
-						       0, ULONG_MAX) {
-
-				vma = vmac->vma;
-				address = get_rmap_addr(rmap_item);
-
-				if (address < vma->vm_start ||
-				    address >= vma->vm_end)
-					continue;
-				/*
-				 * Initially we examine only the vma which
-				 * covers this rmap_item; but later, if there
-				 * is still work to do, we examine covering
-				 * vmas in other mms: in case they were forked
-				 * from the original since ksmd passed.
-				 */
-				if ((rmap_item->slot->vma == vma) ==
-				    search_new_forks)
-					continue;
-
-				if (memcg &&
-				    !mm_match_cgroup(vma->vm_mm, memcg))
-					continue;
-
-				referenced +=
-					page_referenced_one(page, vma,
-						address, &mapcount, vm_flags);
-				if (!search_new_forks || !mapcount)
-					break;
-			}
-
-			anon_vma_unlock_read(anon_vma);
-			if (!mapcount)
-				goto out;
-		}
-	}
-	if (!search_new_forks++)
-		goto again;
-out:
-	return referenced;
-}
-
-int try_to_unmap_ksm(struct page *page, enum ttu_flags flags)
+int rmap_walk_ksm(struct page *page, struct rmap_walk_control *rwc)
 {
 	struct stable_node *stable_node;
 	struct node_vma *node_vma;
@@ -4723,68 +4653,8 @@ int try_to_unmap_ksm(struct page *page, enum ttu_flags flags)
 	int search_new_forks = 0;
 	unsigned long address;
 
-	VM_BUG_ON(!PageKsm(page));
-	VM_BUG_ON(!PageLocked(page));
-
-	stable_node = page_stable_node(page);
-	if (!stable_node)
-		return SWAP_FAIL;
-again:
-	hlist_for_each_entry(node_vma, &stable_node->hlist, hlist) {
-		hlist_for_each_entry(rmap_item, &node_vma->rmap_hlist, hlist) {
-			struct anon_vma *anon_vma = rmap_item->anon_vma;
-			struct anon_vma_chain *vmac;
-			struct vm_area_struct *vma;
-
-			anon_vma_lock_read(anon_vma);
-			anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
-						       0, ULONG_MAX) {
-				vma = vmac->vma;
-				address = get_rmap_addr(rmap_item);
-
-				if (address < vma->vm_start ||
-				    address >= vma->vm_end)
-					continue;
-				/*
-				 * Initially we examine only the vma which
-				 * covers this rmap_item; but later, if there
-				 * is still work to do, we examine covering
-				 * vmas in other mms: in case they were forked
-				 * from the original since ksmd passed.
-				 */
-				if ((rmap_item->slot->vma == vma) ==
-				    search_new_forks)
-					continue;
-
-				ret = try_to_unmap_one(page, vma,
-						       address, flags);
-				if (ret != SWAP_AGAIN || !page_mapped(page)) {
-					anon_vma_unlock_read(anon_vma);
-					goto out;
-				}
-			}
-			anon_vma_unlock_read(anon_vma);
-		}
-	}
-	if (!search_new_forks++)
-		goto again;
-out:
-	return ret;
-}
-
-#ifdef CONFIG_MIGRATION
-int rmap_walk_ksm(struct page *page, int (*rmap_one)(struct page *,
-		  struct vm_area_struct *, unsigned long, void *), void *arg)
-{
-	struct stable_node *stable_node;
-	struct node_vma *node_vma;
-	struct rmap_item *rmap_item;
-	int ret = SWAP_AGAIN;
-	int search_new_forks = 0;
-	unsigned long address;
-
-	VM_BUG_ON(!PageKsm(page));
-	VM_BUG_ON(!PageLocked(page));
+	VM_BUG_ON_PAGE(!PageKsm(page), page);
+	VM_BUG_ON_PAGE(!PageLocked(page), page);
 
 	stable_node = page_stable_node(page);
 	if (!stable_node)
@@ -4810,8 +4680,16 @@ again:
 				    search_new_forks)
 					continue;
 
-				ret = rmap_one(page, vma, address, arg);
+				if (rwc->invalid_vma && rwc->invalid_vma(vma, rwc->arg))
+					continue;
+
+				ret = rwc->rmap_one(page, vma, address, rwc->arg);
 				if (ret != SWAP_AGAIN) {
+					anon_vma_unlock_read(anon_vma);
+					goto out;
+				}
+
+				if (rwc->done && rwc->done(page)) {
 					anon_vma_unlock_read(anon_vma);
 					goto out;
 				}
@@ -4825,13 +4703,14 @@ out:
 	return ret;
 }
 
+#ifdef CONFIG_MIGRATION
 /* Common ksm interface but may be specific to uksm */
 void ksm_migrate_page(struct page *newpage, struct page *oldpage)
 {
 	struct stable_node *stable_node;
 
-	VM_BUG_ON(!PageLocked(oldpage));
-	VM_BUG_ON(!PageLocked(newpage));
+	VM_BUG_ON_PAGE(!PageLocked(oldpage), oldpage);
+	VM_BUG_ON_PAGE(!PageLocked(newpage), newpage);
 	VM_BUG_ON(newpage->mapping != oldpage->mapping);
 
 	stable_node = page_stable_node(newpage);
@@ -5633,7 +5512,7 @@ out_free2:
 }
 
 #ifdef MODULE
-module_init(uksm_init)
+subsys_initcall(ksm_init);
 #else
 late_initcall(uksm_init);
 #endif
