@@ -91,7 +91,13 @@ extern void hlpr_set_gpu_gov_cpu_table(int gpu_table[]);
 static unsigned int hotplug_enabled_flag = 0;
 static unsigned int hotplug_plus_one_core_value = 5;
 static unsigned int hotplug_plus_two_core_value = 90;
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+static unsigned int hotplug_enabled_flag = 1;
+static unsigned int hotplug_cpu_up_load_value = 4;
+static unsigned int hotplug_cpu_up_boost_value = 90;
 static unsigned int normalmin_freq_value = 250000;
+static unsigned int hotplug_cpu_down_hysteresis_value = 20;
+#endif
 
 #define lock_policy_rwsem(mode, cpu)					\
 int lock_policy_rwsem_##mode(int cpu)					\
@@ -544,6 +550,7 @@ static ssize_t store_scaling_max_freq_gpu(struct cpufreq_policy *policy, const c
 	return count;
 }
 
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 /* hotplug sysfs interface */
 
 unsigned int get_hotplug_enabled(void)
@@ -557,23 +564,14 @@ void set_hotplug_enabled(unsigned int state)
 		hotplug_enabled_flag = state;
 }
 
-unsigned int get_hotplug_plus_one_core(void)
+unsigned int get_hotplug_cpu_up_load(void)
 {
-	return hotplug_plus_one_core_value;
+	return hotplug_cpu_up_load_value;
 }
 
-unsigned int get_hotplug_plus_two_core(void)
+unsigned int get_hotplug_cpu_up_boost(void)
 {
-	return hotplug_plus_two_core_value;
-}
-
-void set_min_gpu_freq(unsigned int freq)
-{
-	if (freq != gpu_min && freq >= 100 && freq <= 677)
-	{
-		gpu_min = freq;
-		hlpr_set_min_max_G3D(freq, gpu_max);
-	}
+	return hotplug_cpu_up_boost_value;
 }
 
 unsigned int get_normalmin_freq(void)
@@ -581,12 +579,39 @@ unsigned int get_normalmin_freq(void)
 	return normalmin_freq_value;
 }
 
-static ssize_t show_hotplug_enable(struct cpufreq_policy *policy, char *buf)
+static ssize_t show_hotplug_cpu_down_hysteresis(struct cpufreq_policy *policy, char *buf)
+{
+ return sprintf(buf, "%u\n", hotplug_cpu_down_hysteresis_value);
+}
+
+static ssize_t store_hotplug_cpu_down_hysteresis(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	unsigned int value = 0;
+	
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+	return -EINVAL;
+	
+	if (value >= 0 && value <= 100)
+		hotplug_cpu_down_hysteresis_value = value;
+	else
+		return
+			-EINVAL;
+		
+	return count;
+}
+
+unsigned int get_hotplug_cpu_down_hysteresis(void) {
+	return hotplug_cpu_down_hysteresis_value;
+}
+
+static ssize_t show_hotplug_enabled(struct cpufreq_policy *policy, char *buf)
 {
  return sprintf(buf, "%u\n", hotplug_enabled_flag);
 }
 
-static ssize_t store_hotplug_enable(struct cpufreq_policy *policy, const char *buf, size_t count)
+static ssize_t store_hotplug_enabled(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
  unsigned int ret = -EINVAL;
  unsigned int value = 0;
@@ -604,12 +629,12 @@ else
  return count;
 }
 
-static ssize_t show_hotplug_plus_one_core(struct cpufreq_policy *policy, char *buf)
+static ssize_t show_hotplug_cpu_up_load(struct cpufreq_policy *policy, char *buf)
 {
- return sprintf(buf, "%u\n", hotplug_plus_one_core_value);
+ return sprintf(buf, "%u\n", hotplug_cpu_up_load_value);
 }
 
-static ssize_t store_hotplug_plus_one_core(struct cpufreq_policy *policy, const char *buf, size_t count)
+static ssize_t store_hotplug_cpu_up_load(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
  unsigned int ret = -EINVAL;
  unsigned int value = 0;
@@ -619,7 +644,7 @@ static ssize_t store_hotplug_plus_one_core(struct cpufreq_policy *policy, const 
  return -EINVAL;
 
 if (value >= 0 && value <= 101)
-	hotplug_plus_one_core_value = value;
+	hotplug_cpu_up_load_value = value;
 else
 	return
 		-EINVAL;
@@ -627,12 +652,12 @@ else
  return count;
 }
 
-static ssize_t show_hotplug_plus_two_core(struct cpufreq_policy *policy, char *buf)
+static ssize_t show_hotplug_cpu_up_boost(struct cpufreq_policy *policy, char *buf)
 {
- return sprintf(buf, "%u\n", hotplug_plus_two_core_value);
+ return sprintf(buf, "%u\n", hotplug_cpu_up_boost_value);
 }
 
-static ssize_t store_hotplug_plus_two_core(struct cpufreq_policy *policy, const char *buf, size_t count)
+static ssize_t store_hotplug_cpu_up_boost(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
  unsigned int ret = -EINVAL;
  unsigned int value = 0;
@@ -642,7 +667,7 @@ static ssize_t store_hotplug_plus_two_core(struct cpufreq_policy *policy, const 
  return -EINVAL;
 
 if (value >= 0 && value <= 101)
-	hotplug_plus_two_core_value = value;
+	hotplug_cpu_up_boost_value = value;
 else
 	return
 		-EINVAL;
@@ -672,7 +697,7 @@ else
 		
  return count;
 }
-
+#endif
 
 /**
  * show_scaling_governor - show the current policy for the specified CPU
@@ -942,7 +967,13 @@ cpufreq_freq_attr_rw(GPU_gov_cpu_table);
 cpufreq_freq_attr_rw(hotplug_enable);
 cpufreq_freq_attr_rw(hotplug_plus_one_core);
 cpufreq_freq_attr_rw(hotplug_plus_two_core);
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+cpufreq_freq_attr_rw(hotplug_enabled);
+cpufreq_freq_attr_rw(hotplug_cpu_up_load);
+cpufreq_freq_attr_rw(hotplug_cpu_up_boost);
 cpufreq_freq_attr_rw(normalmin_freq);
+cpufreq_freq_attr_rw(hotplug_cpu_down_hysteresis);
+#endif
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -963,18 +994,18 @@ static struct attribute *default_attrs[] = {
 	&scaling_max_freq_gpu.attr,
 	&scaling_cur_freq_gpu.attr,
 	&GPU_gov_table.attr,
-<<<<<<< HEAD
         &GPU_volt_table.attr,
 	&GPU_gov_mif_table.attr,
 	&GPU_gov_int_table.attr,
 	&GPU_gov_cpu_table.attr,
-=======
 	&GPU_volt_table.attr,
-	&hotplug_enable.attr,
-	&hotplug_plus_one_core.attr,
-	&hotplug_plus_two_core.attr,
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+	&hotplug_enabled.attr,
+	&hotplug_cpu_up_load.attr,
+	&hotplug_cpu_up_boost.attr,
 	&normalmin_freq.attr,
->>>>>>> 51878ac... Really stupid, simple hotplug algorithm
+	&hotplug_cpu_down_hysteresis.attr,
+#endif
 	NULL
 };
 
