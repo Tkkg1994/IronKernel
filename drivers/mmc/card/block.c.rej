@@ -1,0 +1,32 @@
+--- drivers/mmc/card/block.c
++++ drivers/mmc/card/block.c
+@@ -1068,6 +1085,15 @@
+ 	 */
+ 	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
+ 		u32 status;
++
++		/* Check stop command response */
++		if (brq->stop.resp[0] & R1_ERROR) {
++			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0]);
++			gen_err = 1;
++		}
++
+ 		do {
+ 			int err = get_card_status(card, &status, 5);
+ 			if (err) {
+@@ -1092,6 +1126,13 @@
+ 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
+ 	}
+ 
++	/* if general error occurs, retry the write operation. */
++	if (gen_err) {
++		pr_warning("%s: retrying write for general error\n",
++				req->rq_disk->disk_name);
++		return MMC_BLK_RETRY;
++	}
++
+ 	if (brq->data.error) {
+ 		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
+ 		       req->rq_disk->disk_name, brq->data.error,
