@@ -1234,7 +1234,17 @@ static int mmc_blk_err_check(struct mmc_card *card,
 	if ((!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) ||
 			(mq_mrq->packed_cmd == MMC_PACKED_WR_HDR)) {
 		u32 status;
-		unsigned long timeout = jiffies + msecs_to_jiffies(MMC_WR_TIMEOUT_MS);
+		unsigned long timeout;
+		
+		/* Check stop command response */
+		if (brq->stop.resp[0] & R1_ERROR) {
+			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
+			       req->rq_disk->disk_name, __func__,
+			       brq->stop.resp[0]);
+			gen_err = 1;
+		}
+
+		timeout = jiffies + msecs_to_jiffies(MMC_WR_TIMEOUT_MS);
 		do {
 			int err = get_card_status(card, &status, 5);
 			if (err) {
@@ -1249,6 +1259,13 @@ static int mmc_blk_err_check(struct mmc_card *card,
 						status);
 				return MMC_BLK_CMD_ERR;
 			}
+			
+			if (status & R1_ERROR) {
+				pr_err("%s: %s: general error sending status command, card status %#x\n",
+				       req->rq_disk->disk_name, __func__,
+				       status);
+				gen_err = 1;
+			}
 
 			/*
 			 * Some cards mishandle the status bits,
@@ -1258,6 +1275,12 @@ static int mmc_blk_err_check(struct mmc_card *card,
 		} while ((!(status & R1_READY_FOR_DATA) ||
 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG)) &&
 			 time_before(jiffies, timeout));
+	/* if general error occurs, retry the write operation. */
+	if (gen_err) {
+		pr_warning("%s: retrying write for general error\n",
+				req->rq_disk->disk_name);
+		return MMC_BLK_RETRY;
+	}
 
 		/* in case of card stays on program status in 10 secs */
 		if (time_after_eq(jiffies, timeout)) {
@@ -1971,19 +1994,14 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 			if (mq_rq->packed_cmd != MMC_PACKED_NONE) {
 				ret = mmc_blk_end_packed_req(mq, mq_rq);
 				break;
-			} else {
+			} 
+			else {
 				spin_lock_irq(&md->lock);
 				ret = __blk_end_request(req, 0,
 						brq->data.bytes_xfered);
 				spin_unlock_irq(&md->lock);
 			}
 
-			if (status & R1_ERROR) {
-				pr_err("%s: %s: general error sending status command, card status %#x\n",
-				       req->rq_disk->disk_name, __func__,
-				       status);
-				gen_err = 1;
-			}
 
 			/*
 			 * If the blk_end_request function returns non-zero even
