@@ -368,7 +368,8 @@ KBUILD_CFLAGS   := -Wall -Werror -Wundef -Wstrict-prototypes -Wno-trigraphs -Wno
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-unused \
-		   -fno-delete-null-pointer-checks
+		   -fno-delete-null-pointer-checks \
+		   -fno-delete-null-pointer-checks -Wno-cpp -Wno-declaration-after-statement -fno-var-tracking-assignments -Wno-sizeof-pointer-memaccess -Wno-aggressive-loop-optimizations -Wno-sequence-point
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
@@ -569,6 +570,9 @@ include $(srctree)/arch/$(SRCARCH)/Makefile
 ifneq ($(CONFIG_FRAME_WARN),0)
 KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
 endif
+
+#Tell gcc to never replace conditional load with a non-conditional one
+KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 
 # Force gcc to behave correct even for buggy distributions
 ifndef CONFIG_CC_STACKPROTECTOR
