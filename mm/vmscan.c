@@ -2967,7 +2967,6 @@ loop_again:
 			}
 
 			if (!zone_balanced(zone, testorder, 0, end_zone)) {
- 				all_zones_ok = 0;
 				unbalanced_zone = zone;
 				/*
 				 * We are still under min water mark.  This
