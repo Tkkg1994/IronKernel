@@ -34,6 +34,11 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 		}
 		pr_debug("table entry %u: %u kHz, %u index\n",
 					i, freq, table[i].index);
+
+		/* reset policy at stock speeds */
+		policy->max = 1900000;
+		policy->min = 250000;
+
 		if (freq < min_freq)
 			min_freq = freq;
 		if (freq > max_freq)

@@ -26,8 +26,8 @@
 
 #include <mach/sec_debug.h>
 
-#define CPUFREQ_LEVEL_END_CA7	(L14 + 1)
-#define CPUFREQ_LEVEL_END_CA15	(L22 + 1)
+#define CPUFREQ_LEVEL_END_CA7	(L15 + 1)
+#define CPUFREQ_LEVEL_END_CA15	(L23 + 1)
 
 #undef PRINT_DIV_VAL
 
@@ -77,6 +77,7 @@ static struct cpufreq_frequency_table exynos5420_freq_table_CA7[] = {
 	{L12, 400 * 1000},
 	{L13, 300 * 1000},
 	{L14, 200 * 1000},
+	{L15, 100 * 1000},
 	{0, CPUFREQ_TABLE_END},
 };
 
@@ -104,6 +105,7 @@ static struct cpufreq_frequency_table exynos5420_freq_table_CA15[] = {
 	{L20,  400 * 1000},
 	{L21,  300 * 1000},
 	{L22,  200 * 1000},
+	{L23,  100 * 1000},
 	{0, CPUFREQ_TABLE_END},
 };
 
@@ -159,6 +161,9 @@ static unsigned int clkdiv_cpu0_5420_CA7[CPUFREQ_LEVEL_END_CA7][5] = {
 	{ 0, 2, 7, 3, 3 },
 
 	/* ARM L14: 200MHz */
+	{ 0, 2, 7, 3, 3 },
+
+	/* ARM L15: 100MHz */
 	{ 0, 2, 7, 3, 3 },
 };
 
@@ -236,6 +241,9 @@ static unsigned int clkdiv_cpu0_5420_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 
 	/* ARM L22: 200MHz */
 	{ 2, 3, 3, 3, 0 },
+
+	/* ARM L23: 100MHz */
+	{ 2, 3, 3, 3, 0 },
 };
 
 unsigned int clkdiv_cpu1_5420_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
@@ -312,6 +320,9 @@ unsigned int clkdiv_cpu1_5420_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
 
 	/* ARM L22: 200MHz */
 	{ 7, 7 },
+
+	/* ARM L23: 100MHz */
+	{ 7, 7 },
 };
 
 static unsigned int exynos5420_kpll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
@@ -358,6 +369,9 @@ static unsigned int exynos5420_kpll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	((200 << 16) | (2 << 8) | (0x3)),
 
 	/* KPLL FOUT L14: 200MHz */
+	((200 << 16) | (3 << 8) | (0x3)),
+
+	/* KPLL FOUT L15: 100MHz */
 	((200 << 16) | (3 << 8) | (0x3)),
 };
 
@@ -430,6 +444,9 @@ static unsigned int exynos5420_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 
 	/* APLL FOUT L22: 200MHz */
 	((200 << 16) | (3 << 8) | (0x3)),
+
+	/* APLL FOUT L23: 100MHz */
+	((200 << 16) | (3 << 8) | (0x3)),
 };
 
 /*
@@ -452,6 +469,7 @@ static const unsigned int asv_voltage_5420_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	1000000,	/* L12 400 */
 	 900000,	/* L13 300 */
 	 900000,	/* L14 200 */
+	 900000,	/* L15 100 */
 };
 
 static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
@@ -465,7 +483,7 @@ static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	1200000,	/* L7  1700 */
 	1200000,	/* L8  1600 */
 	1100000,	/* L9  1500 */
-	1100000,	/* L10  1400 */
+	1100000,	/* L10 1400 */
 	1100000,	/* L11 1300 */
 	1000000,	/* L12 1200 */
 	1000000,	/* L13 1100 */
@@ -478,6 +496,7 @@ static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	 900000,	/* L20  400 */
 	 900000,	/* L22  300 */
 	 900000,	/* L22  200 */
+	 900000,	/* L23  100 */
 };
 
 /*
@@ -486,20 +505,20 @@ static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
  * If one big cpu is working and other cpus are LITTLE, big cpu
  * can go to max_op_freq_b[0] frequency
  */
-static const unsigned int exynos5420_max_op_freq_b_evt0[NR_CPUS + 1] = {
+//static const unsigned int exynos5420_max_op_freq_b_evt0[NR_CPUS + 1] = {
 	UINT_MAX,
-#ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
-	2100000,
-	2100000,
-	2100000,
-	2100000,
-#else
+//#ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
+	2200000,
+	2200000,
+	2200000,
+	2200000,
+//#else
 	1900000,
 	1900000,
 	1900000,
 	1900000,
-#endif
-};
+//#endif
+//};
 
 /* Minimum memory throughput in megabytes per second */
 static int exynos5420_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
@@ -515,9 +534,10 @@ static int exynos5420_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	160000,	/* 700 MHz */
 	133000,	/* 600 MHz */
 	133000,	/* 500 MHz */
-	0,	/* 400 MHz */
-	0,	/* 300 MHz */
-	0,	/* 200 MHz */
+	133000,	/* 400 MHz */
+	133000,	/* 300 MHz */
+	133000,	/* 200 MHz */
+	133000,	/* 100 MHz */
 };
 
 static int exynos5420_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
@@ -544,6 +564,7 @@ static int exynos5420_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	400000,	/* 400 MHz */
 	400000,	/* 300 MHz */
 	400000,	/* 200 MHz */
+	400000,	/* 100 MHz */
 };
 
 static void exynos5420_set_ema_CA15(unsigned int target_volt)
@@ -888,16 +909,9 @@ static void __init set_volt_table_CA7(void)
 		pr_info("CPUFREQ of CA7  L%d : %d uV\n", i,
 				exynos5420_volt_table_CA7[i]);
 	}
+	max_support_idx_CA7 = L2;
 
-	exynos5420_freq_table_CA7[L0].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA7[L1].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA7[L2].frequency = CPUFREQ_ENTRY_INVALID;
-	max_support_idx_CA7 = L3;
-
-	min_support_idx_CA7 = L11;
-	exynos5420_freq_table_CA7[L12].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA7[L13].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA7[L14].frequency = CPUFREQ_ENTRY_INVALID;
+	min_support_idx_CA7 = L15;
 }
 
 static void __init set_volt_table_CA15(void)
@@ -918,25 +932,9 @@ static void __init set_volt_table_CA15(void)
 				exynos5420_volt_table_CA15[i]);
 	}
 
-	exynos5420_freq_table_CA15[L0].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L1].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L2].frequency = CPUFREQ_ENTRY_INVALID;
-#ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
-	max_support_idx_CA15 = L3;
-#else
-	exynos5420_freq_table_CA15[L3].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L4].frequency = CPUFREQ_ENTRY_INVALID;
-	max_support_idx_CA15 = L5;
-#endif
-
-	min_support_idx_CA15 = L16;
-	exynos5420_freq_table_CA15[L17].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L18].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L19].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L20].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L21].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L22].frequency = CPUFREQ_ENTRY_INVALID;
-}
+	max_support_idx_CA15 = L2;
+	
+	min_support_idx_CA15 = L18;
 
 int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 {
