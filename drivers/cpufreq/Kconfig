@@ -50,15 +50,6 @@ choice
 	  This option sets which CPUFreq governor shall be loaded at
 	  startup. If in doubt, select 'performance'.
 
-config CPU_FREQ_DEFAULT_GOV_YANKACTIVE
-       bool "yankactive"
-       select CPU_FREQ_GOV_YANKACTIVE
-       help
-         Use the CPUFreq governor 'yankactive' as default. This allows
-         you to get a full dynamic cpu frequency capable system by simply
-         loading your cpufreq low-level hardware driver, using the
-         'yankactive' governor for latency-sensitive workloads.
-
 config CPU_FREQ_DEFAULT_GOV_INTELLIMM
        bool "intelliminmax"
        select CPU_FREQ_GOV_INTELLIMM
@@ -88,12 +79,6 @@ config CPU_FREQ_DEFAULT_GOV_ADAPTIVE
 	  loading your cpufreq low-level hardware driver, using the
 	  'adaptive' governor for latency-sensitive workloads and demanding
 	  performance.
-
-config CPU_FREQ_DEFAULT_GOV_ASSWAX
- 	 bool "asswax"
-  	 select CPU_FREQ_GOV_ASSWAX
-  	 help
-	  Use as default governor
 
 config CPU_FREQ_DEFAULT_GOV_BADASS
 	bool "badass"
@@ -188,12 +173,6 @@ config CPU_FREQ_DEFAULT_GOV_POWERSAVE
 	  the frequency statically to the lowest frequency supported by
 	  the CPU.
 
-config CPU_FREQ_DEFAULT_GOV_SMARTASSH3
-	bool "smartassH3"
-	select CPU_FREQ_GOV_SMARTASSH3
-	help
-	  Use the CPUFreq governor 'smartassH3' as default.
-
 config CPU_FREQ_DEFAULT_GOV_USERSPACE
 	bool "userspace"
 	select CPU_FREQ_GOV_USERSPACE
@@ -234,15 +213,6 @@ config CPU_FREQ_GOV_LIONHEART
 config CPU_FREQ_GOV_DARKNESS
 	tristate "'darkness' cpufreq governor"
 	depends on CPU_FREQ
-
-config CPU_FREQ_GOV_YANKACTIVE
-       tristate "'yankactive' cpufreq policy governor"
-       help
-         'yankactive' - This driver adds a dynamic cpufreq policy governor
-         designed for latency-sensitive workloads.
-         The governor is based on interactive with just different default settings
-         and can be achieved using interactive with a script. This is added for
-         simplification purposes for myself.
 
 config CPU_FREQ_GOV_INTELLIMM
        tristate "'intelliminmax' cpufreq policy governor"
@@ -292,12 +262,6 @@ config CPU_FREQ_GOV_ADAPTIVE
 	  For details, take a look at linux/Documentation/cpu-freq.
 
 	  If in doubt, say N.
-
-config CPU_FREQ_GOV_ASSWAX
-	tristate "'asswax' cpufreq governor"
-	depends on CPU_FREQ
-	help
-	  Use as default governors
 
 config CPU_FREQ_GOV_BADASS
 	tristate "'badass' cpufreq policy governor"
@@ -449,12 +413,6 @@ config CPU_FREQ_GOV_POWERSAVE
 	  module will be called cpufreq_powersave.
 
 	  If in doubt, say Y.
-
-config CPU_FREQ_GOV_SMARTASSH3
-	tristate "'smartassH3' cpufreq governor"
-	depends on CPU_FREQ
-	help
-    		'smartassH3' - a "smart" governor
 
 config CPU_FREQ_GOV_USERSPACE
 	tristate "'userspace' governor for userspace frequency scaling"
