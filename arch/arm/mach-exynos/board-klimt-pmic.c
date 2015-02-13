@@ -278,7 +278,7 @@ SREGULATOR_INIT(ldo38, "key_led_3.3v", 3300000, 3300000, 0, 0,
 static struct regulator_init_data s2m_buck1_data = {
 	.constraints = {
 		.name = "vdd_mif range",
-		.min_uV = 700000,
+		.min_uV =  600000,
 		.max_uV = 1300000,
 		.apply_uV	= 1,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
@@ -298,7 +298,7 @@ static struct regulator_init_data s2m_buck1_data = {
 static struct regulator_init_data s2m_buck2_data = {
 	.constraints = {
 		.name = "vdd_arm range",
-		.min_uV = 800000,
+		.min_uV =  600000,
 		.max_uV = 1500000,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				REGULATOR_CHANGE_STATUS,
@@ -315,7 +315,7 @@ static struct regulator_init_data s2m_buck2_data = {
 static struct regulator_init_data s2m_buck3_data = {
 	.constraints	= {
 		.name		= "vdd_int range",
-		.min_uV		=  800000,
+		.min_uV		=  600000,
 		.max_uV		= 1400000,
 		.apply_uV	= 1,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
@@ -335,7 +335,7 @@ static struct regulator_init_data s2m_buck3_data = {
 static struct regulator_init_data s2m_buck4_data = {
 	.constraints	= {
 		.name		= "vdd_g3d range",
-		.min_uV		=  700000,
+		.min_uV		=  600000,
 		.max_uV		= 1400000,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				REGULATOR_CHANGE_STATUS,
@@ -368,7 +368,7 @@ static struct regulator_init_data s2m_buck5v123_data = {
 static struct regulator_init_data s2m_buck6_data = {
 	.constraints	= {
 		.name		= "vdd_kfc range",
-		.min_uV		=  800000,
+		.min_uV		=  600000,
 		.max_uV		= 1500000,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				REGULATOR_CHANGE_STATUS,
