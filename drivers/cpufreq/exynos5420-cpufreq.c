@@ -489,10 +489,10 @@ static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
 static const unsigned int exynos5420_max_op_freq_b_evt0[NR_CPUS + 1] = {
 	UINT_MAX,
 #ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
-	2200000,
-	2200000,
-	2200000,
-	2200000,
+	2100000,
+	2100000,
+	2100000,
+	2100000,
 #else
 	1900000,
 	1900000,
@@ -917,7 +917,8 @@ static void __init set_volt_table_CA15(void)
 
 	exynos5420_freq_table_CA15[L0].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5420_freq_table_CA15[L1].frequency = CPUFREQ_ENTRY_INVALID;
-	max_support_idx_CA15 = L2;
+	exynos5420_freq_table_CA15[L2].frequency = CPUFREQ_ENTRY_INVALID;
+	max_support_idx_CA15 = L3;
 	
 	min_support_idx_CA15 = L16;
 	exynos5420_freq_table_CA15[L17].frequency = CPUFREQ_ENTRY_INVALID;
