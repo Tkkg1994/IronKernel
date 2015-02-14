@@ -257,7 +257,8 @@ core-y				+= arch/arm/net/
 core-y				+= $(machdirs) $(platdirs)
 
 drivers-$(CONFIG_OPROFILE)      += arch/arm/oprofile/
-core-$(CONFIG_INTELLI_PLUG)	+= arch/arm/hotplug/
+core-y				+= arch/arm/hotplug/
+
 
 libs-y				:= arch/arm/lib/ $(libs-y)
 
