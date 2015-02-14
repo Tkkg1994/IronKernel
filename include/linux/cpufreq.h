@@ -313,6 +313,13 @@ __ATTR(_name, 0444, show_##_name, NULL)
 static struct global_attr _name =		\
 __ATTR(_name, 0644, show_##_name, store_##_name)
 
+ssize_t store_mV_table(struct cpufreq_policy *policy,
+				const char *buf, size_t count);
+ssize_t store_uV_table(struct cpufreq_policy *policy, 
+				const char *buf, size_t count);
+
+ssize_t show_mV_table(struct cpufreq_policy *policy, char *buf);
+ssize_t show_uV_table(struct cpufreq_policy *policy, char *buf);
 
 /*********************************************************************
  *                        CPUFREQ 2.6. INTERFACE                     *
