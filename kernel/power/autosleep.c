@@ -11,7 +11,9 @@
 #include <linux/pm_wakeup.h>
 
 #include "power.h"
+#ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
+#endif
 
 static suspend_state_t autosleep_state;
 static struct workqueue_struct *autosleep_wq;

@@ -562,30 +562,3 @@ page_cache_async_readahead(struct address_space *mapping,
 	ondemand_readahead(mapping, ra, filp, true, offset, req_size);
 }
 EXPORT_SYMBOL_GPL(page_cache_async_readahead);
-
-unsigned long max_readahead_pages = VM_MAX_READAHEAD * 1024 / PAGE_CACHE_SIZE;
-
-static int __init readahead(char *str)
-{
-unsigned long bytes;
-if (!str)
-return -EINVAL;
-bytes = memparse(str, &str);
-if (*str != '\0')
-return -EINVAL;
-
-if (bytes) {
-
-if (bytes < PAGE_CACHE_SIZE)
-return -EINVAL;
-
-if (bytes > 256 << 20) /* limit to 256MB */
-bytes = 256 << 20;
-}
-
-max_readahead_pages = bytes / PAGE_CACHE_SIZE;
-default_backing_dev_info.ra_pages = max_readahead_pages;
-return 0;
-}
-
-early_param("readahead", readahead);
