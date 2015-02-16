@@ -105,10 +105,12 @@ int pm_autosleep_set_state(suspend_state_t state)
 	if (state > PM_SUSPEND_ON) {
 		pm_wakep_autosleep_enabled(true);
 		queue_up_suspend_work();
-		set_power_suspend_state_hook(POWER_SUSPEND_ACTIVE); // Yank555.lu : add hook to handle powersuspend tasks
+		// Yank555.lu : add hook to handle powersuspend tasks (sleep)
+		set_power_suspend_state_autosleep_hook(POWER_SUSPEND_ACTIVE);
 	} else {
 		pm_wakep_autosleep_enabled(false);
-		set_power_suspend_state_hook(POWER_SUSPEND_INACTIVE); // Yank555.lu : add hook to handle powersuspend tasks
+		// Yank555.lu : add hook to handle powersuspend tasks (wakeup)
+		set_power_suspend_state_autosleep_hook(POWER_SUSPEND_INACTIVE);
 	}
 
 	mutex_unlock(&autosleep_lock);
