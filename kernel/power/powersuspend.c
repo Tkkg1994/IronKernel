@@ -141,13 +141,17 @@ void set_power_suspend_state(int new_state)
 	unsigned long irqflags;
 
 	spin_lock_irqsave(&state_lock, irqflags);
-	if (state == POWER_SUSPEND_INACTIVE && new_state == POWER_SUSPEND_ACTIVE) {
+	if (state == POWER_SUSPEND_INACTIVE &&
+
+		new_state == POWER_SUSPEND_ACTIVE) {
 #ifdef POWER_SUSPEND_DEBUG
 		pr_info("[POWERSUSPEND] state activated.\n");
 #endif
 		state = new_state;
 		queue_work(suspend_work_queue, &power_suspend_work);
-	} else if (state == POWER_SUSPEND_ACTIVE && new_state == POWER_SUSPEND_INACTIVE) {
+	} else if (state == POWER_SUSPEND_ACTIVE &&
+			new_state == POWER_SUSPEND_INACTIVE) {
+
 #ifdef POWER_SUSPEND_DEBUG
 		pr_info("[POWERSUSPEND] state deactivated.\n");
 #endif
@@ -160,7 +164,9 @@ void set_power_suspend_state(int new_state)
 void set_power_suspend_state_autosleep_hook(int new_state)
 {
 #ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] autosleep resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
+	pr_info("[POWERSUSPEND] autosleep resquests %s.\n",
+
+		new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 #endif
 	if (mode == POWER_SUSPEND_AUTOSLEEP || mode == POWER_SUSPEND_HYBRID)
 		// Yank555.lu : Only allow autosleep hook changes in autosleep & hybrid mode
@@ -172,7 +178,9 @@ EXPORT_SYMBOL(set_power_suspend_state_autosleep_hook);
 void set_power_suspend_state_panel_hook(int new_state)
 {
 #ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] panel resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
+	pr_info("[POWERSUSPEND] panel resquests %s.\n",
+
+		new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 #endif
 	if (mode == POWER_SUSPEND_PANEL || mode == POWER_SUSPEND_HYBRID)
 		// Yank555.lu : Only allow panel hook changes in autosleep & hybrid mode
@@ -201,9 +209,13 @@ static ssize_t power_suspend_state_store(struct kobject *kobj,
 	sscanf(buf, "%d\n", &new_state);
 
 #ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] userspace resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
+	pr_info("[POWERSUSPEND] userspace resquests %s.\n",
+
+		new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 #endif
-	if(new_state == POWER_SUSPEND_ACTIVE || new_state == POWER_SUSPEND_INACTIVE)
+	if(new_state == POWER_SUSPEND_ACTIVE ||
+
+		new_state == POWER_SUSPEND_INACTIVE)
 	set_power_suspend_state(new_state);
 
 	return count;

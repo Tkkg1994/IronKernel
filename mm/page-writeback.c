@@ -103,6 +103,7 @@ unsigned long vm_dirty_bytes;
 unsigned int dirty_writeback_interval = DEFAULT_DIRTY_WRITEBACK_INTERVAL; /* centiseconds */
 EXPORT_SYMBOL_GPL(dirty_writeback_interval);
 
+#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
 /*
  * The dynamic writeback activation status
  */
@@ -120,6 +121,7 @@ EXPORT_SYMBOL_GPL(dirty_writeback_active_interval);
  */
 unsigned int dirty_writeback_suspend_interval = DEFAULT_DIRTY_WRITEBACK_INTERVAL; /* centiseconds */
 EXPORT_SYMBOL_GPL(dirty_writeback_suspend_interval);
+#endif
 
 /*
  * The longest time for which data is allowed to remain dirty
@@ -1560,6 +1562,7 @@ int dirty_writeback_centisecs_handler(ctl_table *table, int write,
 	return 0;
 }
 
+#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
 /*
  * Manages the dirty page writebacks activation status
  */
@@ -1619,6 +1622,7 @@ int dirty_writeback_suspend_centisecs_handler(ctl_table *table, int write,
 	proc_dointvec_minmax(table, write, buffer, length, ppos);
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_BLOCK
 void laptop_mode_timer_fn(unsigned long data)
@@ -1697,6 +1701,7 @@ static struct notifier_block __cpuinitdata ratelimit_nb = {
 	.next		= NULL,
 };
 
+#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
 /*
  * Sets the dirty page writebacks interval for suspended system
  */
@@ -1722,6 +1727,7 @@ static struct power_suspend dirty_writeback_suspend = {
 	.suspend = dirty_writeback_power_suspend,
 	.resume = dirty_writeback_power_resume,
 };
+#endif
 
 static void dirty_power_suspend(struct power_suspend *handler)
 {
@@ -1772,9 +1778,11 @@ void __init page_writeback_init(void)
 		DEFAULT_SUSPEND_DIRTY_EXPIRE_INTERVAL;
 
 	register_power_suspend(&dirty_suspend);
-	
+
+#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK	
 	/* Register the dirty page writeback management during suspend/resume */
 	register_power_suspend(&dirty_writeback_suspend);
+#endif
 
 	writeback_set_ratelimit();
 	register_cpu_notifier(&ratelimit_nb);
