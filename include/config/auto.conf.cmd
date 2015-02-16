@@ -733,7 +733,6 @@ deps_config := \
 	kernel/time/Kconfig \
 	drivers/pcmcia/Kconfig \
 	drivers/pci/Kconfig \
-	arch/arm/hotplug/Kconfig \
 	arch/arm/common/Kconfig \
 	arch/arm/Kconfig-nommu \
 	arch/arm/mm/Kconfig \

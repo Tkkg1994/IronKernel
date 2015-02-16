@@ -75,7 +75,7 @@
 
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_MAX_CLK 670
+#define GPU_MAX_CLK 666
 #define GPU_THROTTLING_90_95 600
 #define GPU_THROTTLING_95_100 533
 #define GPU_THROTTLING_100_105 350
@@ -122,15 +122,15 @@ typedef struct _mali_dvfs_info{
 } mali_dvfs_info;
 
 static mali_dvfs_info mali_dvfs_infotbl[] = {
-	{812500, 100, 0, 45, 0, 160000, 83000, 250000},
-	{812500, 177, 45, 50, 0, 160000, 83000, 250000},
-	{862500, 266, 50, 60, 0, 400000, 222000, 250000},
-	{912500, 350, 60, 70, 0, 667000, 333000, 250000},
-	{962500, 420, 70, 80, 0, 800000, 400000, 250000},
-	{1000000, 480, 75, 85, 0, 800000, 400000, 650000},
-	{1037500, 533, 85, 90, 0, 800000, 400000, 1200000},
-	{1050000, 600, 90, 95, 0, 800000, 400000, 1400000},
-	{1075000, 670, 95, 100, 0, 800000, 400000, 1600000},
+	{812500, 100, 0, 40, 0, 160000, 83000, 250000},
+	{812500, 177, 42, 50, 0, 160000, 83000, 250000},
+	{862500, 266, 52, 60, 0, 400000, 222000, 250000},
+	{912500, 350, 62, 70, 0, 667000, 333000, 250000},
+	{962500, 420, 72, 80, 0, 800000, 400000, 250000},
+	{1000000, 480, 82, 85, 0, 800000, 400000, 650000},
+	{1037500, 533, 87, 90, 0, 800000, 400000, 1200000},
+	{1050000, 600, 92, 95, 0, 800000, 400000, 1400000},
+	{1075000, 666, 97, 99, 0, 800000, 400000, 1600000},
 };
 
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
@@ -221,7 +221,7 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 
 	if (dvfs_status->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 #ifdef PLATFORM_UTILIZATION
-		if (dvfs_status->step == kbase_platform_dvfs_get_level(670)) {
+		if (dvfs_status->step == kbase_platform_dvfs_get_level(666)) {
 			if (platform->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 				dvfs_status->step++;
 				DVFS_ASSERT(dvfs_status->step < MALI_DVFS_STEP);
