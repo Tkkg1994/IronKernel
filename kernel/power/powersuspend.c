@@ -14,6 +14,8 @@
  *
  *  v1.4 - add a hybrid-kernel mode, accepting both kernel hooks (first wins)
  *
+ *  v1.5 - fix hybrid-kernel mode cannot be set through sysfs
+ *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -31,7 +33,7 @@
 #include <linux/workqueue.h>
 
 #define MAJOR_VERSION	1
-#define MINOR_VERSION	4
+#define MINOR_VERSION	5
 
 //#define POWER_SUSPEND_DEBUG // Add debugging prints in dmesg
 
@@ -76,9 +78,9 @@ static void power_suspend(struct work_struct *work)
 	unsigned long irqflags;
 	int abort = 0;
 
-#ifdef POWER_SUSPEND_DEBUG
+	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] entering suspend...\n");
-#endif
+	#endif
 	mutex_lock(&power_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == POWER_SUSPEND_INACTIVE)
@@ -88,17 +90,17 @@ static void power_suspend(struct work_struct *work)
 	if (abort)
 		goto abort_suspend;
 
-#ifdef POWER_SUSPEND_DEBUG
+	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] suspending...\n");
-#endif
+	#endif
 	list_for_each_entry(pos, &power_suspend_handlers, link) {
 		if (pos->suspend != NULL) {
 			pos->suspend(pos);
 		}
 	}
-#ifdef POWER_SUSPEND_DEBUG
+	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] suspended completed.\n");
-#endif
+	#endif
 abort_suspend:
 	mutex_unlock(&power_suspend_lock);
 }
@@ -109,9 +111,9 @@ static void power_resume(struct work_struct *work)
 	unsigned long irqflags;
 	int abort = 0;
 
-#ifdef POWER_SUSPEND_DEBUG
+	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] entering resume...\n");
-#endif
+	#endif
 	mutex_lock(&power_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == POWER_SUSPEND_ACTIVE)
@@ -121,17 +123,17 @@ static void power_resume(struct work_struct *work)
 	if (abort)
 		goto abort_resume;
 
-#ifdef POWER_SUSPEND_DEBUG
+	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] resuming...\n");
-#endif
+	#endif
 	list_for_each_entry_reverse(pos, &power_suspend_handlers, link) {
 		if (pos->resume != NULL) {
 			pos->resume(pos);
 		}
 	}
-#ifdef POWER_SUSPEND_DEBUG
+	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] resume completed.\n");
-#endif
+	#endif
 abort_resume:
 	mutex_unlock(&power_suspend_lock);
 }
@@ -141,20 +143,16 @@ void set_power_suspend_state(int new_state)
 	unsigned long irqflags;
 
 	spin_lock_irqsave(&state_lock, irqflags);
-	if (state == POWER_SUSPEND_INACTIVE &&
-
-		new_state == POWER_SUSPEND_ACTIVE) {
-#ifdef POWER_SUSPEND_DEBUG
+	if (state == POWER_SUSPEND_INACTIVE && new_state == POWER_SUSPEND_ACTIVE) {
+		#ifdef POWER_SUSPEND_DEBUG
 		pr_info("[POWERSUSPEND] state activated.\n");
-#endif
+		#endif
 		state = new_state;
 		queue_work(suspend_work_queue, &power_suspend_work);
-	} else if (state == POWER_SUSPEND_ACTIVE &&
-			new_state == POWER_SUSPEND_INACTIVE) {
-
-#ifdef POWER_SUSPEND_DEBUG
+	} else if (state == POWER_SUSPEND_ACTIVE && new_state == POWER_SUSPEND_INACTIVE) {
+		#ifdef POWER_SUSPEND_DEBUG
 		pr_info("[POWERSUSPEND] state deactivated.\n");
-#endif
+		#endif
 		state = new_state;
 		queue_work(suspend_work_queue, &power_resume_work);
 	}
@@ -163,11 +161,9 @@ void set_power_suspend_state(int new_state)
 
 void set_power_suspend_state_autosleep_hook(int new_state)
 {
-#ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] autosleep resquests %s.\n",
-
-		new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
-#endif
+	#ifdef POWER_SUSPEND_DEBUG
+	pr_info("[POWERSUSPEND] autosleep resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
+	#endif
 	if (mode == POWER_SUSPEND_AUTOSLEEP || mode == POWER_SUSPEND_HYBRID)
 		// Yank555.lu : Only allow autosleep hook changes in autosleep & hybrid mode
 		set_power_suspend_state(new_state);
@@ -177,11 +173,9 @@ EXPORT_SYMBOL(set_power_suspend_state_autosleep_hook);
 
 void set_power_suspend_state_panel_hook(int new_state)
 {
-#ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] panel resquests %s.\n",
-
-		new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
-#endif
+	#ifdef POWER_SUSPEND_DEBUG
+	pr_info("[POWERSUSPEND] panel resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
+	#endif
 	if (mode == POWER_SUSPEND_PANEL || mode == POWER_SUSPEND_HYBRID)
 		// Yank555.lu : Only allow panel hook changes in autosleep & hybrid mode
 		set_power_suspend_state(new_state);
@@ -208,14 +202,10 @@ static ssize_t power_suspend_state_store(struct kobject *kobj,
 
 	sscanf(buf, "%d\n", &new_state);
 
-#ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] userspace resquests %s.\n",
-
-		new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
-#endif
-	if(new_state == POWER_SUSPEND_ACTIVE ||
-
-		new_state == POWER_SUSPEND_INACTIVE)
+	#ifdef POWER_SUSPEND_DEBUG
+	pr_info("[POWERSUSPEND] userspace resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
+	#endif
+	if(new_state == POWER_SUSPEND_ACTIVE || new_state == POWER_SUSPEND_INACTIVE)
 	set_power_suspend_state(new_state);
 
 	return count;
@@ -312,9 +302,9 @@ static int __init power_suspend_init(void)
 	}
 
 	mode = POWER_SUSPEND_HYBRID; // Yank555.lu : Default to display panel / autosleep hybrid mode
-	// mode = POWER_SUSPEND_AUTOSLEEP; // Yank555.lu : Default to autosleep mode
-	// mode = POWER_SUSPEND_USERSPACE; // Yank555.lu : Default to userspace mode
-	// mode = POWER_SUSPEND_PANEL; // Yank555.lu : Default to display panel mode
+//	mode = POWER_SUSPEND_AUTOSLEEP; // Yank555.lu : Default to autosleep mode
+//	mode = POWER_SUSPEND_USERSPACE; // Yank555.lu : Default to userspace mode
+//	mode = POWER_SUSPEND_PANEL; // Yank555.lu : Default to display panel mode
 	return 0;
 }
 

@@ -5711,6 +5711,7 @@ static struct trace_print_flags pageflag_names[] = {
 	{1UL << PG_nocache,		"nocache"	},
 #endif
 	{-1UL,				NULL		},
+	{1UL << PG_readahead, 		"PG_readahead"  },
 };
 
 static void dump_page_flags(unsigned long flags)
