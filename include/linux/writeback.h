@@ -76,6 +76,7 @@ struct writeback_control {
 	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
 	unsigned range_cyclic:1;	/* range_start is cyclic */
+	unsigned for_sync:1;		/* sync(2) WB_SYNC_ALL writeback */
 };
 
 /*
@@ -160,11 +161,11 @@ int dirty_writeback_centisecs_handler(struct ctl_table *, int,
 
 #ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
 int dynamic_dirty_writeback_handler(struct ctl_table *, int,
-					void __user *, size_t *, loff_t *);
+				      void __user *, size_t *, loff_t *);
 int dirty_writeback_active_centisecs_handler(struct ctl_table *, int,
-						void __user *, size_t *, loff_t *);
+				      void __user *, size_t *, loff_t *);
 int dirty_writeback_suspend_centisecs_handler(struct ctl_table *, int,
-						void __user *, size_t *, loff_t *);
+				      void __user *, size_t *, loff_t *);
 #endif
 
 void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);

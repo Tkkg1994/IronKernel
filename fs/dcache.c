@@ -37,9 +37,9 @@
 #include <linux/rculist_bl.h>
 #include <linux/prefetch.h>
 #include <linux/ratelimit.h>
+#include <linux/powersuspend.h>
 #include "internal.h"
 #include "mount.h"
-#include <linux/powersuspend.h>
 
 /*
  * Usage:
