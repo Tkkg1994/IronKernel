@@ -1,7 +1,7 @@
 /*
  *
  * Automatically generated file; DO NOT EDIT.
- * Linux/arm 3.4.106-IronKernel_Beta3 Kernel Configuration
+ * Linux/arm 3.4.106-IronKernel_Beta4 Kernel Configuration
  *
  */
 #define CONFIG_RING_BUFFER 1
@@ -742,6 +742,7 @@
 #define CONFIG_DM_UEVENT 1
 #define CONFIG_NET_VENDOR_I825XX 1
 #define CONFIG_NETFILTER_XT_MATCH_MAC 1
+#define CONFIG_DYNAMIC_PAGE_WRITEBACK 1
 #define CONFIG_SOC_EXYNOS5420 1
 #define CONFIG_ARM_NR_BANKS 16
 #define CONFIG_NETFILTER_XT_TARGET_NFLOG 1

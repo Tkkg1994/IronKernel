@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 4
 SUBLEVEL = 106
-EXTRAVERSION = -IronKernel_Beta3
+EXTRAVERSION = -IronKernel_Beta4
 NAME = Saber-toothed Squirrel
 
 # *DOCUMENTATION*

@@ -817,7 +817,7 @@ deps_config := \
 include/config/auto.conf: \
 	$(deps_config)
 
-ifneq "$(KERNELVERSION)" "3.4.106-IronKernel_Beta3"
+ifneq "$(KERNELVERSION)" "3.4.106-IronKernel_Beta4"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(ARCH)" "arm"
