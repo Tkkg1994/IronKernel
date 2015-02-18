@@ -33,6 +33,7 @@ deps_config := \
 	fs/nfsd/Kconfig \
 	fs/nfs/Kconfig \
 	fs/exofs/Kconfig.ore \
+	fs/f2fs/Kconfig \
 	fs/exofs/Kconfig \
 	fs/ufs/Kconfig \
 	fs/sysv/Kconfig \
@@ -817,7 +818,7 @@ deps_config := \
 include/config/auto.conf: \
 	$(deps_config)
 
-ifneq "$(KERNELVERSION)" "3.4.106"
+ifneq "$(KERNELVERSION)" "3.4.106-IronKernel_Beta4_TW_T805"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(ARCH)" "arm"
