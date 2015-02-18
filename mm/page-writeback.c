@@ -1779,7 +1779,7 @@ void __init page_writeback_init(void)
 
 	register_power_suspend(&dirty_suspend);
 
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK	
+#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
 	/* Register the dirty page writeback management during suspend/resume */
 	register_power_suspend(&dirty_writeback_suspend);
 #endif

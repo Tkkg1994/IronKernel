@@ -36,8 +36,8 @@
 #include <linux/bit_spinlock.h>
 #include <linux/rculist_bl.h>
 #include <linux/prefetch.h>
-#include <linux/ratelimit.h>
 #include <linux/powersuspend.h>
+#include <linux/ratelimit.h>
 #include "internal.h"
 #include "mount.h"
 
@@ -83,6 +83,7 @@
 #define DEFAULT_VFS_SUSPEND_CACHE_PRESSURE 20
 int sysctl_vfs_cache_pressure __read_mostly, resume_cache_pressure;
 int sysctl_vfs_suspend_cache_pressure __read_mostly, suspend_cache_pressure;
+
 EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
 
 static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);

@@ -30,11 +30,10 @@ if (*str != '\0')
 return -EINVAL;
 
 if (bytes) {
-
 if (bytes < PAGE_CACHE_SIZE)
 return -EINVAL;
 
-if (bytes > 256 << 20) /* limit to 256MB */
+if (bytes > 256 << 20)	/* limit to 256MB */
 bytes = 256 << 20;
 }
 
@@ -44,7 +43,6 @@ return 0;
 }
 
 early_param("readahead", readahead);
-
 /*
  * Initialise a struct file's readahead state.  Assumes that the caller has
  * memset *ra to zero.
