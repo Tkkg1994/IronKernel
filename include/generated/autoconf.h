@@ -1,7 +1,7 @@
 /*
  *
  * Automatically generated file; DO NOT EDIT.
- * Linux/arm 3.4.106-IronKernel_Beta4 Kernel Configuration
+ * Linux/arm 3.4.106 Kernel Configuration
  *
  */
 #define CONFIG_RING_BUFFER 1
@@ -801,6 +801,7 @@
 #define CONFIG_ION_EXYNOS_MEMSIZE_SECDMA 128
 #define CONFIG_TCP_CONG_HSTCP 1
 #define CONFIG_SCSI_MOD 1
+#define CONFIG_ASYNC_FSYNC 1
 #define CONFIG_NET_VENDOR_MICREL 1
 #define CONFIG_SERIAL_SAMSUNG_CONSOLE 1
 #define CONFIG_AUDIT_TREE 1

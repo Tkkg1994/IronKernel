@@ -99,7 +99,7 @@ static void power_suspend(struct work_struct *work)
 		}
 	}
 	#ifdef POWER_SUSPEND_DEBUG
-	pr_info("[POWERSUSPEND] suspended completed.\n");
+	pr_info("[POWERSUSPEND] suspend completed.\n");
 	#endif
 abort_suspend:
 	mutex_unlock(&power_suspend_lock);
@@ -164,8 +164,8 @@ void set_power_suspend_state_autosleep_hook(int new_state)
 	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] autosleep resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 	#endif
+	// Yank555.lu : Only allow autosleep hook changes in autosleep & hybrid mode
 	if (mode == POWER_SUSPEND_AUTOSLEEP || mode == POWER_SUSPEND_HYBRID)
-		// Yank555.lu : Only allow autosleep hook changes in autosleep & hybrid mode
 		set_power_suspend_state(new_state);
 }
 
@@ -176,8 +176,8 @@ void set_power_suspend_state_panel_hook(int new_state)
 	#ifdef POWER_SUSPEND_DEBUG
 	pr_info("[POWERSUSPEND] panel resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 	#endif
+	// Yank555.lu : Only allow panel hook changes in autosleep & hybrid mode
 	if (mode == POWER_SUSPEND_PANEL || mode == POWER_SUSPEND_HYBRID)
-		// Yank555.lu : Only allow panel hook changes in autosleep & hybrid mode
 		set_power_suspend_state(new_state);
 }
 
@@ -206,7 +206,7 @@ static ssize_t power_suspend_state_store(struct kobject *kobj,
 	pr_info("[POWERSUSPEND] userspace resquests %s.\n", new_state == POWER_SUSPEND_ACTIVE ? "sleep" : "wakeup");
 	#endif
 	if(new_state == POWER_SUSPEND_ACTIVE || new_state == POWER_SUSPEND_INACTIVE)
-	set_power_suspend_state(new_state);
+		set_power_suspend_state(new_state);
 
 	return count;
 }
@@ -301,10 +301,11 @@ static int __init power_suspend_init(void)
 		return -ENOMEM;
 	}
 
-	mode = POWER_SUSPEND_HYBRID; // Yank555.lu : Default to display panel / autosleep hybrid mode
 //	mode = POWER_SUSPEND_AUTOSLEEP; // Yank555.lu : Default to autosleep mode
 //	mode = POWER_SUSPEND_USERSPACE; // Yank555.lu : Default to userspace mode
-//	mode = POWER_SUSPEND_PANEL; // Yank555.lu : Default to display panel mode
+//	mode = POWER_SUSPEND_PANEL;	// Yank555.lu : Default to display panel mode
+	mode = POWER_SUSPEND_HYBRID;	// Yank555.lu : Default to display panel / autosleep hybrid mode
+	
 	return 0;
 }
 
