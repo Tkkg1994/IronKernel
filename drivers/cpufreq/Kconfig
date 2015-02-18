@@ -57,18 +57,6 @@ config CPU_FREQ_DEFAULT_GOV_INTELLIMM
          Use the CPUFreq governor 'intelliminmax' as default. This is
          governor will use only 3 different frequencies, idle, UI and max
 
-config CPU_FREQ_DEFAULT_GOV_SCARY
-	bool "scary"
-	select CPU_FREQ_GOV_SCARY
-	help
-	  Use the CPUFreq governor 'scary' as default.
-
-config CPU_FREQ_DEFAULT_GOV_SAVAGEDZEN
-	bool "SavagedZen"
-	select CPU_FREQ_GOV_SAVAGEDZEN
-	help
-	  Use the CPUFreq governor 'savagedzen' as default.
-
 config CPU_FREQ_DEFAULT_GOV_ABYSSPLUG
 	bool "abyssplug"
 	select CPU_FREQ_GOV_ABYSSPLUG
@@ -225,23 +213,6 @@ config CPU_FREQ_GOV_LIONHEART
 config CPU_FREQ_GOV_DARKNESS
 	tristate "'darkness' cpufreq governor"
 	depends on CPU_FREQ
-
-
-config CPU_FREQ_GOV_SCARY
-	tristate "'scary' cpufreq governor"
-	depends on CPU_FREQ
-	help
-	  Scary - a governor for cabbages
-
-	  If in doubt, say N.
-
-config CPU_FREQ_GOV_SAVAGEDZEN
-	tristate "'savagedzen' cpufreq governor"
-	depends on CPU_FREQ
-	help
-	  'Savaged-Zen' - a "smartass" based governor
-
-	   If in doubt, say N.
 
 config CPU_FREQ_GOV_INTELLIMM
        tristate "'intelliminmax' cpufreq policy governor"
