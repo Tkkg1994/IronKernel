@@ -71,6 +71,20 @@ static DEFINE_SPINLOCK(cpufreq_driver_lock);
 static DEFINE_PER_CPU(int, cpufreq_policy_cpu);
 static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
 
+static unsigned int gpu_min = 100;
+static unsigned int gpu_max = 666;
+extern unsigned int get_cur_gpu_freq(void);
+extern ssize_t hlpr_get_gpu_gov_table(char *buf);
+extern void hlpr_set_gpu_gov_table(int gpu_table[]);
+extern ssize_t hlpr_get_gpu_volt_table(char *buf);
+extern void hlpr_set_gpu_volt_table(int gpu_table[]);
+extern ssize_t hlpr_get_gpu_gov_mif_table(char *buf);
+extern void hlpr_set_gpu_gov_mif_table(int gpu_table[]);
+extern ssize_t hlpr_get_gpu_gov_int_table(char *buf);
+extern void hlpr_set_gpu_gov_int_table(int gpu_table[]);
+extern ssize_t hlpr_get_gpu_gov_cpu_table(char *buf);
+extern void hlpr_set_gpu_gov_cpu_table(int gpu_table[]);
+
 #define lock_policy_rwsem(mode, cpu)					\
 int lock_policy_rwsem_##mode(int cpu)					\
 {									\
@@ -441,6 +455,55 @@ static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 	return sprintf(buf, "%u\n", cur_freq);
 }
 
+extern void hlpr_set_min_max_G3D(unsigned int min, unsigned int max);
+
+static ssize_t show_scaling_min_freq_gpu(struct cpufreq_policy *policy,	char *buf)
+{
+	return sprintf(buf, "%u\n", gpu_min);
+}
+
+static ssize_t store_scaling_min_freq_gpu(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	unsigned int value = 0;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		return -EINVAL;
+	
+	if (value < gpu_max)
+	{
+		gpu_min = value;
+		hlpr_set_min_max_G3D(gpu_min, gpu_max);
+	}
+	else
+		return -EINVAL;
+	return count;
+}
+
+static ssize_t show_scaling_max_freq_gpu(struct cpufreq_policy *policy,	char *buf)
+{
+	return sprintf(buf, "%u\n", gpu_max);
+}
+
+static ssize_t store_scaling_max_freq_gpu(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	unsigned int value = 0;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		return -EINVAL;
+
+	if (value > gpu_min)
+	{
+		gpu_max = value;
+		hlpr_set_min_max_G3D(gpu_min, gpu_max);
+	}
+	else
+		return -EINVAL;
+	return count;
+}
 
 /**
  * show_scaling_governor - show the current policy for the specified CPU
@@ -456,7 +519,6 @@ static ssize_t show_scaling_governor(struct cpufreq_policy *policy, char *buf)
 				policy->governor->name);
 	return -EINVAL;
 }
-
 
 /**
  * store_scaling_governor - store policy for the specified CPU
@@ -602,6 +664,86 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
 }
 
+ssize_t show_GPU_gov_table(struct cpufreq_policy *policy, char *buf)
+{
+	return hlpr_get_gpu_gov_table(buf);
+}
+
+ssize_t store_GPU_gov_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int u[FREQ_STEPS_GPU];
+	ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9]);
+
+	hlpr_set_gpu_gov_table(u);
+	return count;
+}
+
+ssize_t show_GPU_volt_table(struct cpufreq_policy *policy, char *buf)
+{
+        return hlpr_get_gpu_volt_table(buf);
+}
+
+ssize_t store_GPU_volt_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+        unsigned int ret = -EINVAL;
+        int u[FREQ_STEPS_GPU];
+        ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9]);
+
+        hlpr_set_gpu_volt_table(u);
+        return count;
+}
+
+ssize_t show_GPU_gov_mif_table(struct cpufreq_policy *policy, char *buf)
+{
+	return hlpr_get_gpu_gov_mif_table(buf);
+}
+
+ssize_t store_GPU_gov_mif_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+	unsigned int ret = -EINVAL;
+	int u[FREQ_STEPS_GPU];
+	ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
+
+	hlpr_set_gpu_gov_mif_table(u);
+	return count;
+}
+
+ssize_t show_GPU_gov_int_table(struct cpufreq_policy *policy, char *buf)
+{
+        return hlpr_get_gpu_gov_int_table(buf);
+}
+
+ssize_t store_GPU_gov_int_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+        unsigned int ret = -EINVAL;
+        int u[FREQ_STEPS_GPU];
+        ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
+
+        hlpr_set_gpu_gov_int_table(u);
+        return count;
+}
+
+ssize_t show_GPU_gov_cpu_table(struct cpufreq_policy *policy, char *buf)
+{
+        return hlpr_get_gpu_gov_cpu_table(buf);
+}
+
+ssize_t store_GPU_gov_cpu_table(struct cpufreq_policy *policy, const char *buf, size_t count)
+{
+        unsigned int ret = -EINVAL;
+        int u[FREQ_STEPS_GPU];
+        ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
+
+        hlpr_set_gpu_gov_cpu_table(u);
+        return count;
+}
+
+ssize_t show_scaling_cur_freq_gpu(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", get_cur_gpu_freq());
+}
+
 cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
 cpufreq_freq_attr_ro(cpuinfo_min_freq);
 cpufreq_freq_attr_ro(cpuinfo_max_freq);
@@ -612,10 +754,20 @@ cpufreq_freq_attr_ro(scaling_cur_freq);
 cpufreq_freq_attr_ro(bios_limit);
 cpufreq_freq_attr_ro(related_cpus);
 cpufreq_freq_attr_ro(affected_cpus);
+cpufreq_freq_attr_ro(scaling_cur_freq_gpu);
 cpufreq_freq_attr_rw(scaling_min_freq);
 cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
+cpufreq_freq_attr_rw(mV_table);
+cpufreq_freq_attr_rw(uV_table);
+cpufreq_freq_attr_rw(scaling_min_freq_gpu);
+cpufreq_freq_attr_rw(scaling_max_freq_gpu);
+cpufreq_freq_attr_rw(GPU_gov_table);
+cpufreq_freq_attr_rw(GPU_volt_table);
+cpufreq_freq_attr_rw(GPU_gov_mif_table);
+cpufreq_freq_attr_rw(GPU_gov_int_table);
+cpufreq_freq_attr_rw(GPU_gov_cpu_table);
 
 static struct attribute *default_attrs[] = {
 	&cpuinfo_min_freq.attr,
@@ -629,6 +781,16 @@ static struct attribute *default_attrs[] = {
 	&scaling_driver.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
+	&mV_table.attr,
+	&uV_table.attr,
+	&scaling_min_freq_gpu.attr,
+	&scaling_max_freq_gpu.attr,
+	&scaling_cur_freq_gpu.attr,
+	&GPU_gov_table.attr,
+        &GPU_volt_table.attr,
+	&GPU_gov_mif_table.attr,
+	&GPU_gov_int_table.attr,
+	&GPU_gov_cpu_table.attr,
 	NULL
 };
 
@@ -784,7 +946,6 @@ static int cpufreq_add_dev_policy(unsigned int cpu,
 #endif
 	return ret;
 }
-
 
 /* symlink affected CPUs */
 static int cpufreq_add_dev_symlink(unsigned int cpu,
