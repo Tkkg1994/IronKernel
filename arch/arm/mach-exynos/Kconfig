@@ -1614,6 +1614,14 @@ menuconfig SEC_PM
 	help
 	  Samsung TN Power Management.
 
+config FORCE_FAST_CHARGE
+	bool "Force fast charging (AC/USB) by Yank555.lu"
+	default y
+	help
+	  A simple sysfs interface to force adapters that
+	  are detected as USB to charge as AC (1A/h) or to set
+	  custom charging currents for AC and USB.
+
 if SEC_PM
 config SEC_PM_DEBUG
 	bool "Enable Samsung TN Power management debug support"
