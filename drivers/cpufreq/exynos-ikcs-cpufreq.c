@@ -85,7 +85,7 @@ static unsigned int freq_max[CA_END] __read_mostly;	/* Maximum (Big/Little) cloc
 #define ARM_INT_SKEW_FREQ_H	1800000
 
 #define ARM_MAX_VOLT		1362500
-#define KFC_MAX_VOLT		1312500
+#define KFC_MAX_VOLT		1362500
 
 static struct exynos_dvfs_info *exynos_info[CA_END];
 static struct exynos_dvfs_info exynos_info_CA7;
@@ -1010,7 +1010,7 @@ static ssize_t show_freq_table(struct kobject *kobj,
 	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
 
 	for (i = 0; merge_freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
-		if (merge_freq_table[i].frequency != CPUFREQ_ENTRY_INVALID &&
+		if (merge_freq_table[i].frequency != CPUFREQ_ENTRY_INVALID && 
 			merge_freq_table[i].frequency <= 1900000 &&
 			merge_freq_table[i].frequency >= 250000)
 			count += snprintf(&buf[count], pr_len, "%d ",
