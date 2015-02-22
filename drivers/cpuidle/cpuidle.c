@@ -576,8 +576,8 @@ static int cpuidle_latency_notify(struct notifier_block *b,
 {
 #if 0
 	smp_call_function(smp_callback, NULL, 1);
-	return NOTIFY_OK;
 #endif
+	return NOTIFY_OK;
 }
 
 static struct notifier_block cpuidle_latency_notifier = {
