@@ -193,7 +193,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= arm
-CROSS_COMPILE	?= /Kernel_Folder/Toolchain_4.9.3/bin/arm-eabi-
+CROSS_COMPILE	?= /Kernel_Folder/Toolchain_4.9.3-2015.02/bin/arm-eabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -365,7 +365,7 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS   := -Wall -Werror -Wundef -Wstrict-prototypes -Wno-trigraphs -Wno-unused-variable -Wno-maybe-uninitialized -Wno-unused-label \
-		   -fno-strict-aliasing -fno-common -mfpu=neon-vfpv4\
+		   -fno-strict-aliasing -fno-common -mfpu=neon-vfpv4 \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-unused-function -Wno-array-bounds \
 		   -fno-delete-null-pointer-checks -Wno-cpp -Wno-declaration-after-statement -fno-var-tracking-assignments -Wno-sizeof-pointer-memaccess -Wno-aggressive-loop-optimizations -Wno-sequence-point
