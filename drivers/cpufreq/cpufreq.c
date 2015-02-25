@@ -72,7 +72,7 @@ static DEFINE_PER_CPU(int, cpufreq_policy_cpu);
 static DEFINE_PER_CPU(struct rw_semaphore, cpu_policy_rwsem);
 
 static unsigned int gpu_min = 100;
-static unsigned int gpu_max = 666;
+static unsigned int gpu_max = 733;
 extern unsigned int get_cur_gpu_freq(void);
 extern ssize_t hlpr_get_gpu_gov_table(char *buf);
 extern void hlpr_set_gpu_gov_table(int gpu_table[]);
