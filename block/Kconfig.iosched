@@ -158,6 +158,9 @@ choice
 	config DEFAULT_SIOPLUS
 		bool "SIOPLUS" if IOSCHED_SIOPLUS=y
 
+	config DEFAULT_TEST
+		bool "test" if IOSCHED_TEST=y
+
 endchoice
 
 config DEFAULT_IOSCHED
@@ -172,6 +175,7 @@ config DEFAULT_IOSCHED
 	default "sio" if DEFAULT_SIO
 	default "fiops" if DEFAULT_FIOPS
 	default "sioplus" if DEFAULT_SIOPLUS
+	default "test" if DEFAULT_TEST
 
 endmenu
 
