@@ -171,15 +171,36 @@ static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
 static const unsigned int mali_dvfs_vol_default[] = { 812500, 812500, 862500, 912500, 962500, 1000000, 1037500, 1050000, 1075000, 1100000};
 
+ssize_t hlpr_get_gpu_volt_table(char *buf)
+{
+       int i, len = 0;
+
+       for (i = 0; i < MALI_DVFS_STEP; i++) {
+               len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].voltage);
+       }
+
+       return len;
+}
+
+void hlpr_set_gpu_volt_table(int gpu_table[])
+{
+        int i;
+        int u = 0;
+        for (i = 0; i < MALI_DVFS_STEP; i++)
+        {
+                mali_dvfs_infotbl[i].voltage = gpu_table[u];
+                pr_alert("SET GPU VOLTAGE TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].voltage);
+                u++;
+	}
+}
+
 ssize_t hlpr_get_gpu_gov_table(char *buf)
 {
 	int i, len = 0;
-	int k = dvfs_step_max-1;
-	for (i = dvfs_step_min; i < dvfs_step_max; i++)
+	for (i = dvfs_step_max-1; i >= dvfs_step_min && i >= 0; i--)
 	{
-		len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
-		pr_alert("GET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
-		k--;
+		len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].max_threshold);
+		pr_alert("GET GPU GOV TABLE %d - %d - %d - %d", i, mali_dvfs_infotbl[i].clock,  mali_dvfs_infotbl[i].min_threshold, mali_dvfs_infotbl[i].max_threshold);
 	}
 	
 	return len;
@@ -189,35 +210,107 @@ void hlpr_set_gpu_gov_table(int gpu_table[])
 {
 	int i;
 	int u = 0;
-	int k = dvfs_step_max-1;
-	for (i = dvfs_step_min; i < dvfs_step_max; i++)
+	for (i = dvfs_step_max-1; i >= dvfs_step_min && i >= 0; i--)
 	{
-		mali_dvfs_infotbl[k].max_threshold = gpu_table[u];
+		mali_dvfs_infotbl[i].max_threshold = gpu_table[u];
 		if (i == dvfs_step_min)
-			mali_dvfs_infotbl[k].min_threshold = 0;
+			mali_dvfs_infotbl[i].min_threshold = 0;
 		else
-			mali_dvfs_infotbl[k].min_threshold = gpu_table[u+1];
-		pr_alert("SET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);			
-		k--;
+			mali_dvfs_infotbl[i].min_threshold = gpu_table[u+1]-1;
+		pr_alert("SET GPU GOV TABLE %d - %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].min_threshold, mali_dvfs_infotbl[i].max_threshold);
 		u++;
 	}
 }
 
+ssize_t hlpr_get_gpu_gov_mif_table(char *buf)
+{
+	int i, len = 0;
+	for (i = MALI_DVFS_STEP-1; i >= dvfs_step_min && i >= 0; i--)
+	{
+		len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].mem_freq / 1000);
+		pr_alert("GET GPU GOV MIF TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].mem_freq / 1000);
+	}
+	
+	return len;
+}
+
+void hlpr_set_gpu_gov_mif_table(int gpu_table[])
+{
+	int i;
+	int u = 0;
+	for (i = MALI_DVFS_STEP-1; i >= dvfs_step_min && i >= 0; i--)
+	{
+		mali_dvfs_infotbl[i].mem_freq = gpu_table[u] * 1000;
+		pr_alert("SET GPU GOV MIF TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].mem_freq * 1000);
+		u++;
+	}
+}
+
+ssize_t hlpr_get_gpu_gov_int_table(char *buf)
+{
+        int i, len = 0;
+        for (i = MALI_DVFS_STEP-1; i >= dvfs_step_min && i >= 0; i--)
+        {
+                len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].int_freq / 1000);
+                pr_alert("GET GPU GOV INT TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].int_freq / 1000);
+        }
+
+        return len;
+}
+
+void hlpr_set_gpu_gov_int_table(int gpu_table[])
+{
+        int i;
+        int u = 0;
+        for (i = MALI_DVFS_STEP-1; i >= dvfs_step_min && i >= 0; i--)
+        {
+                mali_dvfs_infotbl[i].int_freq = gpu_table[u] * 1000;
+                pr_alert("SET GPU GOV INT TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].int_freq * 1000);
+                u++;
+        }
+}
+
+ssize_t hlpr_get_gpu_gov_cpu_table(char *buf)
+{
+        int i, len = 0;
+        for (i = MALI_DVFS_STEP-1; i >= dvfs_step_min && i >= 0; i--)
+        {
+                len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].cpu_freq / 1000);
+                pr_alert("GET GPU GOV CPU TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].cpu_freq / 1000);
+        }
+
+        return len;
+}
+
+void hlpr_set_gpu_gov_cpu_table(int gpu_table[])
+{
+        int i;
+        int u = 0;
+        for (i = MALI_DVFS_STEP-1; i >= dvfs_step_min && i >= 0; i--)
+        {
+                mali_dvfs_infotbl[i].cpu_freq = gpu_table[u] * 1000;
+                pr_alert("SET GPU GOV MIF TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].cpu_freq * 1000);
+                u++;
+        }
+}
+
+static int gov_table[10][10] = {
+	{ 100 },
+	{ 100, 50 },
+	{ 100, 70, 30 },
+	{ 100, 90, 70, 40 },
+	{ 100, 90, 70, 50, 30 },
+	{ 100, 90, 80, 70, 50, 30 },
+	{ 100, 90, 80, 70, 60, 45, 30 },
+	{ 100, 90, 85, 75, 65, 45, 30, 10 },
+	{ 100, 90, 80, 70, 60, 45, 30, 10, 10 },
+	{ 100, 90, 80, 70, 60, 50, 40, 30, 10, 10 },
+};
 
 void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 {
 	int i;
-	int tbl0[1] = { 95 };
-	int tbl1[2] = { 95, 50 };
-	int tbl2[3] = { 95, 70, 30 };
-	int tbl3[4] = { 95, 90, 70, 40 };
-	int tbl4[5] = { 95, 90, 70, 60, 40 };
-	int tbl5[6] = { 95, 90, 80, 70, 55, 40 };
-	int tbl6[7] = { 95, 90, 80, 70, 60, 50, 40 };
-	int tbl7[8] = { 95, 90, 85, 75, 65, 55, 50, 40 };
-	int tbl8[9] = { 95, 90, 80, 70, 65, 60, 55, 50, 40 };
-	int tbl9[10] = { 95	, 85, 80, 70, 65, 60, 55, 50, 45, 40 };
-	
+
 	for (i = 0; i < MALI_DVFS_STEP; i++)
 	{
 		if (mali_dvfs_infotbl[i].clock == min)
@@ -229,26 +322,7 @@ void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 		}
 	}
 	
-	if (dvfs_step_max - dvfs_step_min == 1)
-		hlpr_set_gpu_gov_table(tbl0);
-	else if (dvfs_step_max - dvfs_step_min == 2)
-		hlpr_set_gpu_gov_table(tbl1);
-	else if (dvfs_step_max - dvfs_step_min == 3)
-		hlpr_set_gpu_gov_table(tbl2);
-	else if (dvfs_step_max - dvfs_step_min == 4)
-		hlpr_set_gpu_gov_table(tbl3);
-	else if (dvfs_step_max - dvfs_step_min == 5)
-		hlpr_set_gpu_gov_table(tbl4);
-	else if (dvfs_step_max - dvfs_step_min == 6)
-		hlpr_set_gpu_gov_table(tbl5);
-	else if (dvfs_step_max - dvfs_step_min == 7)
-		hlpr_set_gpu_gov_table(tbl6);
-	else if (dvfs_step_max - dvfs_step_min == 8)
-		hlpr_set_gpu_gov_table(tbl7);
-	else if (dvfs_step_max - dvfs_step_min == 9)
-		hlpr_set_gpu_gov_table(tbl8);
-	else if (dvfs_step_max - dvfs_step_min == 10)
-		hlpr_set_gpu_gov_table(tbl9);
+	hlpr_set_gpu_gov_table(gov_table[dvfs_step_max - dvfs_step_min - 1]);
 }
 
 static int mali_dvfs_update_asv(int cmd)
