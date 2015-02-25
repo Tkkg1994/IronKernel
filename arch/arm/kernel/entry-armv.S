@@ -577,7 +577,7 @@ call_fpe:
 2:	ldr	r5, [r6], #4			@ mask value
 	ldr	r7, [r6], #4			@ opcode bits matching in mask
 	cmp	r5, #0				@ end mask?
-	beq	if
+	beq	1f
 	and	r8, r0, r5
 	cmp	r8, r7				@ NEON instruction?
 	bne	2b
