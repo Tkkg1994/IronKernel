@@ -408,7 +408,6 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
 show_one(scaling_max_freq, max);
-show_one(scaling_cur_freq, cur);
 show_one(cpu_utilization, util);
 #ifdef CONFIG_SEC_PM
 show_one(cpu_load, load_at_max);
@@ -844,7 +843,7 @@ ssize_t store_GPU_gov_table(struct cpufreq_policy *policy, const char *buf, size
 {
 	unsigned int ret = -EINVAL;
 	int u[FREQ_STEPS_GPU];
-	ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
+	ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
 
 	hlpr_set_gpu_gov_table(u);
 	return count;
@@ -859,7 +858,7 @@ ssize_t store_GPU_volt_table(struct cpufreq_policy *policy, const char *buf, siz
 {
         unsigned int ret = -EINVAL;
         int u[FREQ_STEPS_GPU];
-        ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
+        ret = sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6], &u[7], &u[8], &u[9], &u[10]);
 
         hlpr_set_gpu_volt_table(u);
         return count;
