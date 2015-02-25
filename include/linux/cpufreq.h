@@ -101,8 +101,11 @@ struct cpufreq_policy {
 	unsigned int		max;    /* in kHz */
 	unsigned int		cur;    /* in kHz, only needed if cpufreq
 					 * governors are used */
-	unsigned int            util;  /* CPU utilization at max frequency */
+	unsigned int            util;  	/* CPU utilization at max frequency */
 	unsigned int		policy; /* see above */
+#ifdef CONFIG_SEC_PM
+	unsigned int 		load_at_max; 	/* CPU utilization at max frequency */
+#endif
 	struct cpufreq_governor	*governor; /* see below */
 
 	struct work_struct	update; /* if update_policy() needs to be
