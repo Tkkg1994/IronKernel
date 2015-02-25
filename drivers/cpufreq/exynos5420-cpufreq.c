@@ -26,8 +26,8 @@
 
 #include <mach/sec_debug.h>
 
-#define CPUFREQ_LEVEL_END_CA7	(L15 + 1)
-#define CPUFREQ_LEVEL_END_CA15	(L23 + 1)
+#define CPUFREQ_LEVEL_END_CA7	(L14 + 1)
+#define CPUFREQ_LEVEL_END_CA15	(L22 + 1)
 
 #undef PRINT_DIV_VAL
 
@@ -77,7 +77,6 @@ static struct cpufreq_frequency_table exynos5420_freq_table_CA7[] = {
 	{L12, 400 * 1000},
 	{L13, 300 * 1000},
 	{L14, 200 * 1000},
-	{L15, 100 * 1000},
 	{0, CPUFREQ_TABLE_END},
 };
 
@@ -105,7 +104,6 @@ static struct cpufreq_frequency_table exynos5420_freq_table_CA15[] = {
 	{L20,  400 * 1000},
 	{L21,  300 * 1000},
 	{L22,  200 * 1000},
-	{L23,  100 * 1000},
 	{0, CPUFREQ_TABLE_END},
 };
 
@@ -161,9 +159,6 @@ static unsigned int clkdiv_cpu0_5420_CA7[CPUFREQ_LEVEL_END_CA7][5] = {
 	{ 0, 2, 7, 3, 3 },
 
 	/* ARM L14: 200MHz */
-	{ 0, 2, 7, 3, 3 },
-
-	/* ARM L15: 100MHz */
 	{ 0, 2, 7, 3, 3 },
 };
 
@@ -241,9 +236,6 @@ static unsigned int clkdiv_cpu0_5420_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 
 	/* ARM L22: 200MHz */
 	{ 2, 3, 3, 3, 0 },
-
-	/* ARM L23: 100MHz */
-	{ 2, 3, 3, 3, 0 },
 };
 
 unsigned int clkdiv_cpu1_5420_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
@@ -320,9 +312,6 @@ unsigned int clkdiv_cpu1_5420_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
 
 	/* ARM L22: 200MHz */
 	{ 7, 7 },
-
-	/* ARM L23: 200MHz */
-	{ 7, 7 },
 };
 
 static unsigned int exynos5420_kpll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
@@ -370,9 +359,6 @@ static unsigned int exynos5420_kpll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 
 	/* KPLL FOUT L14: 200MHz */
 	((200 << 16) | (3 << 8) | (0x3)),
-
-	/* KPLL FOUT L15: 100MHz */
-	((175 << 16) | (3 << 8) | (0x3)),
 };
 
 static unsigned int exynos5420_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
@@ -444,9 +430,6 @@ static unsigned int exynos5420_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 
 	/* APLL FOUT L22: 200MHz */
 	((200 << 16) | (3 << 8) | (0x3)),
-
-	/* APLL FOUT L23: 100MHz */
-	((175 << 16) | (3 << 8) | (0x3)),
 };
 
 /*
@@ -469,7 +452,6 @@ static const unsigned int asv_voltage_5420_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	1000000,	/* L12 400 */
 	 900000,	/* L13 300 */
 	 900000,	/* L14 200 */
-	 900000,	/* L15 100 */
 };
 
 static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
@@ -496,7 +478,6 @@ static const unsigned int asv_voltage_5420_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	 900000,	/* L20  400 */
 	 900000,	/* L21  300 */
 	 900000,	/* L22  200 */
-	 900000,	/* L23  100 */
 };
 
 /*
@@ -537,7 +518,6 @@ static int exynos5420_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	133000,	/* 400 MHz */
 	133000,	/* 300 MHz */
 	133000,	/* 200 MHz */
-	133000,	/* 100 MHz */
 };
 
 static int exynos5420_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
@@ -564,7 +544,6 @@ static int exynos5420_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	400000,	/* 400 MHz */
 	400000,	/* 300 MHz */
 	400000,	/* 200 MHz */
-	400000,	/* 100 MHz */
 };
 
 static void exynos5420_set_ema_CA15(unsigned int target_volt)
@@ -916,7 +895,6 @@ static void __init set_volt_table_CA7(void)
 	max_support_idx_CA7 = L3;
 
 	min_support_idx_CA7 = L14;
-	exynos5420_freq_table_CA7[L15].frequency = CPUFREQ_ENTRY_INVALID;
 }
 
 static void __init set_volt_table_CA15(void)
@@ -949,7 +927,6 @@ static void __init set_volt_table_CA15(void)
 	exynos5420_freq_table_CA15[L20].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5420_freq_table_CA15[L21].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5420_freq_table_CA15[L22].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5420_freq_table_CA15[L23].frequency = CPUFREQ_ENTRY_INVALID;
 }
 
 int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
