@@ -153,6 +153,33 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
 	: "cc");
 }
 
+static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+{
+	int oldval, newval;
+	unsigned long tmp;
+
+	smp_mb();
+	prefetchw(&v->counter);
+
+	__asm__ __volatile__ ("@ atomic_add_unless\n"
+"1:	ldrex	%0, [%4]\n"
+"	teq	%0, %5\n"
+"	beq	2f\n"
+"	add	%1, %0, %6\n"
+"	strex	%2, %1, [%4]\n"
+"	teq	%2, #0\n"
+"	bne	1b\n"
+"2:"
+	: "=&r" (oldval), "=&r" (newval), "=&r" (tmp), "+Qo" (v->counter)
+	: "r" (&v->counter), "r" (u), "r" (a)
+	: "cc");
+
+	if (oldval != u)
+		smp_mb();
+
+	return oldval;
+}
+
 static inline void atomic_push(atomic_t *v, int value, int width)
 {
 	unsigned long tmp;
@@ -275,10 +302,6 @@ static inline int atomic_pop(atomic_t *v, int width)
 	return result & ((1 << width) - 1);
 }
 
-#endif /* __LINUX_ARM_ARCH__ */
-
-#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
-
 static inline int __atomic_add_unless(atomic_t *v, int a, int u)
 {
 	int c, old;
@@ -288,6 +311,9 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
 		c = old;
 	return c;
 }
+#endif /* __LINUX_ARM_ARCH__ */
+
+#define atomic_xchg(v, new) (xchg(&((v)->counter), new))
 
 #define atomic_inc(v)		atomic_add(1, v)
 #define atomic_dec(v)		atomic_sub(1, v)
