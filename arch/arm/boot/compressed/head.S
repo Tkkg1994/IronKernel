@@ -1111,7 +1111,7 @@ iflush:
 
 __armv5tej_mmu_cache_flush:
 		tst	r4, #1
-		movne	pc, l
+		movne	pc, lr
 1:		mrc	p15, 0, r15, c7, c14, 3	@ test,clean,invalidate D cache
 		bne	1b
 		mcr	p15, 0, r0, c7, c5, 0	@ flush I cache
