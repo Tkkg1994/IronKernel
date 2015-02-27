@@ -38,10 +38,6 @@
 #include <plat/adc.h>
 #endif
 
-#ifdef CONFIG_FORCE_FAST_CHARGE
-#include <linux/fastchg.h>
-#endif
-
 #if defined(CONFIG_BATTERY_SAMSUNG)
 #include <linux/battery/sec_battery.h>
 #include <linux/battery/sec_fuelgauge.h>
@@ -216,6 +212,11 @@ static bool sec_bat_check_jig_status(void)
 		return false;
 }
 
+int mhl_class_usb = 300;
+int mhl_class_500 = 400;
+int mhl_class_900 = 700;
+int mhl_class_1500 = 1300;
+
 static int sec_bat_get_cable_from_extended_cable_type(
 	int input_extended_cable_type)
 {
@@ -279,23 +280,23 @@ static int sec_bat_get_cable_from_extended_cable_type(
 				break;
 			case ONLINE_POWER_TYPE_MHL_500:
 				cable_type = POWER_SUPPLY_TYPE_MISC;
-				charge_current_max = 400;
-				charge_current = 400;
+				charge_current_max = mhl_class_500;
+				charge_current = mhl_class_500;
 				break;
 			case ONLINE_POWER_TYPE_MHL_900:
 				cable_type = POWER_SUPPLY_TYPE_MISC;
-				charge_current_max = 700;
-				charge_current = 700;
+				charge_current_max = mhl_class_900;
+				charge_current = mhl_class_900;
 				break;
 			case ONLINE_POWER_TYPE_MHL_1500:
 				cable_type = POWER_SUPPLY_TYPE_MISC;
-				charge_current_max = 1300;
-				charge_current = 1300;
+				charge_current_max = mhl_class_1500;
+				charge_current = mhl_class_1500;
 				break;
 			case ONLINE_POWER_TYPE_USB:
 				cable_type = POWER_SUPPLY_TYPE_USB;
-				charge_current_max = 300;
-				charge_current = 300;
+				charge_current_max = mhl_class_usb;
+				charge_current = mhl_class_usb;
 				break;
 			default:
 				cable_type = cable_main;
@@ -321,53 +322,6 @@ static int sec_bat_get_cable_from_extended_cable_type(
 		cable_type = cable_main;
 		break;
 	}
-
-#ifdef CONFIG_FORCE_FAST_CHARGE
-	/* We are in basic Fast Charge mode, so we substitute AC to USB
-	   levels */
-	if (force_fast_charge == FAST_CHARGE_FORCE_AC) {
-		switch(cable_type) {
-			/* These are low current USB connections,
-			   apply normal 1.0A AC levels to USB */
-			case POWER_SUPPLY_TYPE_USB:
-			case POWER_SUPPLY_TYPE_USB_ACA:
-			case POWER_SUPPLY_TYPE_CARDOCK:
-			case POWER_SUPPLY_TYPE_OTG:
-				charge_current_max = USB_CHARGE_1000;
-				charge_current     = USB_CHARGE_1000;
-				break;
-
-		}
-	/* We are in advanced Fast Charge mode, so we apply custom charging
-	   levels for both AC and USB */
-	} else if (force_fast_charge == FAST_CHARGE_FORCE_CUSTOM_MA) {
-		switch(cable_type) {
-			/* These are USB connections, apply custom USB current
-			   for all of them */
-			case POWER_SUPPLY_TYPE_USB:
-			case POWER_SUPPLY_TYPE_USB_DCP:
-			case POWER_SUPPLY_TYPE_USB_CDP:
-			case POWER_SUPPLY_TYPE_USB_ACA:
-			case POWER_SUPPLY_TYPE_CARDOCK:
-			case POWER_SUPPLY_TYPE_OTG:
-				charge_current_max = usb_charge_level;
-				charge_current     = usb_charge_level;
-				break;
-			/* These are AC connections, apply custom AC current
-			   for all of them */
-			case POWER_SUPPLY_TYPE_MAINS:
-				charge_current_max = ac_charge_level;
-				/* but never go above 1.9A */
-				charge_current     =
-					min(ac_charge_level, MAX_CHARGE_LEVEL);
-				break;
-			/* Don't do anything for any other kind of connections
-			   and don't touch when type is unknown */
-			default:
-				break;
-		}
-	}
-#endif
 
 #if 0
 	if (cable_type == POWER_SUPPLY_TYPE_WPC)
@@ -809,11 +763,7 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #endif
 #elif defined(CONFIG_CHAGALL)/*USA, Canna use csc files for setting*/
 #if defined(CONFIG_TARGET_LOCALE_USA)
-#if defined(CONFIG_CHAGALL_LTE)
-	.temp_high_threshold_event = 530,
-#else
 	.temp_high_threshold_event = 600,
-#endif
 	.temp_high_recovery_event = 460,
 	.temp_low_threshold_event = -50,
 	.temp_low_recovery_event = 0,

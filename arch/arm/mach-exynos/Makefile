@@ -183,7 +183,6 @@ obj-$(CONFIG_KLIMT)		+= board-lt03-battery.o
 obj-$(CONFIG_N1A)		+= board-lt03-battery.o
 obj-$(CONFIG_N2A)		+= board-lt03-battery.o
 obj-$(CONFIG_HA)		+= board-universal5420-battery.o
-obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
 
 ifeq ($(CONFIG_LEDS_AN30259A),y)
 obj-$(CONFIG_MACH_UNIVERSAL5420)	+= board-universal5420-led.o
