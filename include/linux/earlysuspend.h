@@ -36,12 +36,10 @@ enum {
 	EARLY_SUSPEND_LEVEL_DISABLE_FB = 150,
 };
 struct early_suspend {
-#ifdef CONFIG_HAS_EARLYSUSPEND
 	struct list_head link;
 	int level;
 	void (*suspend)(struct early_suspend *h);
 	void (*resume)(struct early_suspend *h);
-#endif
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
