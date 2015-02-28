@@ -60,6 +60,9 @@ ifeq ($(TIMA_ENABLED),1)
 obj-$(CONFIG_TIMA_LOG)		+= tima_debug_log.o
 endif
 obj-$(CONFIG_QC_MODEM)		+= mdm_if/
+ifeq ($(CONFIG_GENERIC_BLN),y)
+obj-$(CONFIG_GENERIC_BLN)	+= bln.o
+endif
 
 # Secure OS Mobicore Interface
 obj-$(CONFIG_MOBICORE_DRIVER)  += tzic.o
