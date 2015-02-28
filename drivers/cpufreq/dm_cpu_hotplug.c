@@ -219,7 +219,6 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 			for (i=1; i < NR_CPUS; i++) 
 				if (cpu_online(i)) 
 					cpu_down(i);
-			set_min_gpu_freq(100);
 		}
 		exynos_dm_hotplug_disable = true;
 		mutex_unlock(&dm_hotplug_lock);
