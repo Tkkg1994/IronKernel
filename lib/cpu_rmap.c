@@ -307,7 +307,7 @@ int irq_cpu_rmap_add(struct cpu_rmap *rmap, int irq)
 	if (rc) {
 		cpu_rmap_put(glue->rmap);
 		kfree(glue);
-	}
+	}	
 	return rc;
 }
 EXPORT_SYMBOL(irq_cpu_rmap_add);
