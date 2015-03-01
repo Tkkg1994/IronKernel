@@ -131,3 +131,6 @@ obj-$(CONFIG_PSTORE)		+= pstore/
 
 # Patched by YAFFS
 obj-$(CONFIG_YAFFS_FS)		+= yaffs2/
+ifeq ($(CONFIG_DYNAMIC_FSYNC),y)
+obj-y				+= dyn_sync_cntrl.o
+endif
