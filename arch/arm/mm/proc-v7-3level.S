@@ -19,6 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
+#include <asm/assembler.h>
 
 #define TTB_IRGN_NC	(0 << 8)
 #define TTB_IRGN_WBWA	(1 << 8)
@@ -70,8 +71,7 @@ ENTRY(cpu_v7_set_pte_ext)
 	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
 	orreq	r2, #L_PTE_RDONLY
 1:	strd	r2, r3, [r0]
-	ALT_SMP	(W(nop))
-	ALT_UP	(mcr	p15, 0, r0, c7, c10, 1)	@ flush_pte
+	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
 #endif
 	ret	lr
 ENDPROC(cpu_v7_set_pte_ext)

@@ -171,4 +171,3 @@ void flush_bp_all(void)
 	else
 		local_flush_bp_all();
 }
-
