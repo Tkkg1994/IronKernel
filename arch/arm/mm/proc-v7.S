@@ -85,7 +85,7 @@ ENTRY(cpu_v7_dcache_clean_area)
 	bhi	1b
 	dsb
 #endif
-ret	lr
+	ret	lr
 ENDPROC(cpu_v7_dcache_clean_area)
 
 	string	cpu_v7_name, "ARMv7 Processor"
