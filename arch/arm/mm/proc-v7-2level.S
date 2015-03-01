@@ -56,7 +56,7 @@ ENTRY(cpu_v7_switch_mm)
 	mcr	p15, 0, r0, c2, c0, 0		@ set TTB 0
 	isb
 #endif
-	ret	lr
+	bx	lr
 ENDPROC(cpu_v7_switch_mm)
 
 /*
@@ -103,10 +103,9 @@ ENTRY(cpu_v7_set_pte_ext)
  ARM(	str	r3, [r0, #2048]! )
  THUMB(	add	r0, r0, #2048 )
  THUMB(	str	r3, [r0] )
-	ALT_SMP	(W(nop))
-	ALT_UP	(mcr	p15, 0, r0, c7, c10, 1)	@ flush_pte
+	mcr	p15, 0, r0, c7, c10, 1		@ flush_pte
 #endif
-	ret	lr
+	bx	lr
 ENDPROC(cpu_v7_set_pte_ext)
 
 	/*

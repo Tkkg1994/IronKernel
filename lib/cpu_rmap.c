@@ -253,7 +253,6 @@ EXPORT_SYMBOL(free_irq_cpu_rmap);
  *
  * This is executed in workqueue context.
  */
-
 static void
 irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
 {
@@ -307,7 +306,7 @@ int irq_cpu_rmap_add(struct cpu_rmap *rmap, int irq)
 	if (rc) {
 		cpu_rmap_put(glue->rmap);
 		kfree(glue);
-	}	
+	}
 	return rc;
 }
 EXPORT_SYMBOL(irq_cpu_rmap_add);
