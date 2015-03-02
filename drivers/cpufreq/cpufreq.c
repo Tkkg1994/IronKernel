@@ -88,7 +88,6 @@ extern ssize_t hlpr_get_gpu_gov_int_table(char *buf);
 extern void hlpr_set_gpu_gov_int_table(int gpu_table[]);
 extern ssize_t hlpr_get_gpu_gov_cpu_table(char *buf);
 extern void hlpr_set_gpu_gov_cpu_table(int gpu_table[]);
-
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 static unsigned int hotplug_enabled_flag = 0;
 static unsigned int hotplug_cpu_up_load_value = 4;
@@ -443,10 +442,6 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
 show_one(scaling_max_freq, max);
-show_one(cpu_utilization, util);
-#ifdef CONFIG_SEC_PM
-show_one(cpu_load, load_at_max);
-#endif
 
 static ssize_t show_scaling_cur_freq(
 	struct cpufreq_policy *policy, char *buf)
@@ -576,15 +571,6 @@ unsigned int get_hotplug_cpu_up_boost(void)
 	return hotplug_cpu_up_boost_value;
 }
 
-void set_min_gpu_freq(unsigned int freq)
-{
-	if (freq != gpu_min && freq >= 100 && freq <= 667)
-	{
-		gpu_min = freq;
-		hlpr_set_min_max_G3D(freq, gpu_max);
-	}
-}
-
 unsigned int get_normalmin_freq(void)
 {
 	return normalmin_freq_value;
@@ -709,7 +695,6 @@ else
  return count;
 }
 #endif
-
 
 /**
  * show_scaling_governor - show the current policy for the specified CPU
