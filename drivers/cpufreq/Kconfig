@@ -51,9 +51,9 @@ choice
 	  startup. If in doubt, select 'performance'.
 
 config CPU_FREQ_DEFAULT_GOV_INTELLIMM
-       bool "intelliminmax"
-       select CPU_FREQ_GOV_INTELLIMM
-       help
+	bool "intelliminmax"
+	select CPU_FREQ_GOV_INTELLIMM
+	help
          Use the CPUFreq governor 'intelliminmax' as default. This is
          governor will use only 3 different frequencies, idle, UI and max
 
