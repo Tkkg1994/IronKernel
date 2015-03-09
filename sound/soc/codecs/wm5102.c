@@ -576,6 +576,9 @@ static const struct reg_default wm5102_sysclk_revb_patch[] = {
 	{ 0x3083, 0x00ED },
 	{ 0x30C1, 0x08FE },
 	{ 0x30C3, 0x00ED },
+	{ 0x3125, 0x0A03 },
+	{ 0x3127, 0x0A03 },
+	{ 0x3129, 0x0A03 },
 };
 
 static const struct reg_default wm5102t_sysclk_pwr[] = {
