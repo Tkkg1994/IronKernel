@@ -1074,7 +1074,8 @@ EXPORT_SYMBOL_GPL(wm_adsp2_event);
 
 int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs, struct mutex *fw_lock)
 {
-	int ret;
+	int ret, i;
+	const char **ctl_names;
 
 	/*
 	 * Disable the DSP memory by default when in reset for a small
@@ -1119,6 +1120,23 @@ int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs, struct mutex *fw_lock)
 				ret);
 			return ret;
 		}
+	}
+
+	if (!adsp->num_firmwares) {
+		if (!adsp->dev->of_node || wm_adsp_of_parse_adsp(adsp) <= 0) {
+			adsp->num_firmwares = WM_ADSP_NUM_FW;
+			adsp->firmwares = wm_adsp_fw;
+		}
+	} else {
+		ctl_names = devm_kzalloc(adsp->dev,
+				adsp->num_firmwares * sizeof(const char *),
+				GFP_KERNEL);
+
+		for (i = 0; i < adsp->num_firmwares; i++)
+			ctl_names[i] = adsp->firmwares[i].name;
+
+		wm_adsp_fw_enum[adsp->num - 1].max = adsp->num_firmwares;
+		wm_adsp_fw_enum[adsp->num - 1].texts = ctl_names;
 	}
 
 	return 0;
