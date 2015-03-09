@@ -303,7 +303,9 @@ static int wm_adsp_load(struct wm_adsp *dsp)
 		 wm_adsp_fw[dsp->fw].file);
 	file[PAGE_SIZE - 1] = '\0';
 
+	mutex_lock(dsp->fw_lock);
 	ret = request_firmware(&firmware, file, dsp->dev);
+	mutex_unlock(dsp->fw_lock);
 	if (ret != 0) {
 		adsp_err(dsp, "Failed to request '%s'\n", file);
 		goto out;
@@ -689,7 +691,9 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 		 wm_adsp_fw[dsp->fw].file);
 	file[PAGE_SIZE - 1] = '\0';
 
+	mutex_lock(dsp->fw_lock);
 	ret = request_firmware(&firmware, file, dsp->dev);
+	mutex_unlock(dsp->fw_lock);
 	if (ret != 0) {
 		adsp_warn(dsp, "Failed to request '%s'\n", file);
 		ret = 0;
@@ -1068,7 +1072,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(wm_adsp2_event);
 
-int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs)
+int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs, struct mutex *fw_lock)
 {
 	int ret;
 
@@ -1084,6 +1088,8 @@ int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs)
 	}
 
 	INIT_LIST_HEAD(&adsp->alg_regions);
+
+	adsp->fw_lock = fw_lock;
 
 	if (dvfs) {
 		adsp->dvfs = devm_regulator_get(adsp->dev, "DCVDD");
