@@ -968,36 +968,6 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 			return ret;
 		}
 
-		if (dsp->dvfs) {
-			ret = regmap_read(dsp->regmap,
-					  dsp->base + ADSP2_CLOCKING, &val);
-			if (ret != 0) {
-				dev_err(dsp->dev,
-					"Failed to read clocking: %d\n", ret);
-				return ret;
-			}
-
-			if ((val & ADSP2_CLK_SEL_MASK) >= 3) {
-				ret = regulator_enable(dsp->dvfs);
-				if (ret != 0) {
-					dev_err(dsp->dev,
-						"Failed to enable supply: %d\n",
-						ret);
-					return ret;
-				}
-
-				ret = regulator_set_voltage(dsp->dvfs,
-							    1800000,
-							    1800000);
-				if (ret != 0) {
-					dev_err(dsp->dev,
-						"Failed to raise supply: %d\n",
-						ret);
-					return ret;
-				}
-			}
-		}
-
 		ret = wm_adsp2_ena(dsp);
 		if (ret != 0)
 			return ret;
@@ -1036,21 +1006,6 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_2, 0);
 		regmap_write(dsp->regmap, dsp->base + ADSP2_RDMA_CONFIG_1, 0);
 
-		if (dsp->dvfs) {
-			ret = regulator_set_voltage(dsp->dvfs, 1200000,
-						    1800000);
-			if (ret != 0)
-				dev_warn(dsp->dev,
-					 "Failed to lower supply: %d\n",
-					 ret);
-
-			ret = regulator_disable(dsp->dvfs);
-			if (ret != 0)
-				dev_err(dsp->dev,
-					"Failed to enable supply: %d\n",
-					ret);
-		}
-
 		while (!list_empty(&dsp->alg_regions)) {
 			alg_region = list_first_entry(&dsp->alg_regions,
 						      struct wm_adsp_alg_region,
@@ -1072,7 +1027,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(wm_adsp2_event);
 
-int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs, struct mutex *fw_lock)
+int wm_adsp2_init(struct wm_adsp *adsp, struct mutex *fw_lock)
 {
 	int ret, i;
 	const char **ctl_names;
@@ -1091,36 +1046,6 @@ int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs, struct mutex *fw_lock)
 	INIT_LIST_HEAD(&adsp->alg_regions);
 
 	adsp->fw_lock = fw_lock;
-
-	if (dvfs) {
-		adsp->dvfs = devm_regulator_get(adsp->dev, "DCVDD");
-		if (IS_ERR(adsp->dvfs)) {
-			ret = PTR_ERR(adsp->dvfs);
-			dev_err(adsp->dev, "Failed to get DCVDD: %d\n", ret);
-			return ret;
-		}
-
-		ret = regulator_enable(adsp->dvfs);
-		if (ret != 0) {
-			dev_err(adsp->dev, "Failed to enable DCVDD: %d\n",
-				ret);
-			return ret;
-		}
-
-		ret = regulator_set_voltage(adsp->dvfs, 1200000, 1800000);
-		if (ret != 0) {
-			dev_err(adsp->dev, "Failed to initialise DVFS: %d\n",
-				ret);
-			return ret;
-		}
-
-		ret = regulator_disable(adsp->dvfs);
-		if (ret != 0) {
-			dev_err(adsp->dev, "Failed to disable DCVDD: %d\n",
-				ret);
-			return ret;
-		}
-	}
 
 	if (!adsp->num_firmwares) {
 		if (!adsp->dev->of_node || wm_adsp_of_parse_adsp(adsp) <= 0) {
