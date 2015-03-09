@@ -1231,6 +1231,9 @@ SND_SOC_DAPM_AIF_IN("SLIMRX8", NULL, 0,
 
 ARIZONA_DSP_WIDGETS(DSP1, "DSP1"),
 
+SND_SOC_DAPM_VIRT_MUX_E("DSP Virtual Output Mux", SND_SOC_NOPM, 0, 0,
+			&wm5102_dsp_output_mux, 0, 0),
+
 SND_SOC_DAPM_VALUE_MUX("AEC Loopback", ARIZONA_DAC_AEC_CONTROL_1,
 		       ARIZONA_AEC_LOOPBACK_ENA_SHIFT, 0,
 		       &wm5102_aec_loopback_mux),
@@ -1330,6 +1333,7 @@ ARIZONA_MUX_WIDGETS(ISRC2INT2, "ISRC2INT2"),
 WM_ADSP2("DSP1", 0),
 
 SND_SOC_DAPM_OUTPUT("CLAMP"),
+SND_SOC_DAPM_OUTPUT("DSP Virtual Output"),
 
 SND_SOC_DAPM_OUTPUT("HPOUT1L"),
 SND_SOC_DAPM_OUTPUT("HPOUT1R"),
@@ -1599,6 +1603,10 @@ static const struct snd_soc_dapm_route wm5102_dapm_routes[] = {
 	ARIZONA_MUX_ROUTES("ISRC2DEC2", "ISRC2DEC2"),
 
 	ARIZONA_DSP_ROUTES("DSP1"),
+
+	{ "DSP Virtual Output", NULL, "DSP Virtual Output Mux" },
+	{ "DSP Virtual Output Mux", "DSP1", "DSP1" },
+	{ "DSP Virtual Output", NULL, "SYSCLK" },
 
 	{ "AEC Loopback", "HPOUT1L", "OUT1L" },
 	{ "AEC Loopback", "HPOUT1R", "OUT1R" },
