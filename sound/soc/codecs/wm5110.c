@@ -414,9 +414,6 @@ SND_SOC_DAPM_INPUT("IN3R"),
 SND_SOC_DAPM_INPUT("IN4L"),
 SND_SOC_DAPM_INPUT("IN4R"),
 
-SND_SOC_DAPM_OUTPUT("DRC1 Signal Activity"),
-SND_SOC_DAPM_OUTPUT("DRC2 Signal Activity"),
-
 SND_SOC_DAPM_PGA_E("IN1L PGA", ARIZONA_INPUT_ENABLES, ARIZONA_IN1L_ENA_SHIFT,
 		   0, NULL, 0, arizona_in_ev,
 		   SND_SOC_DAPM_PRE_PMD | SND_SOC_DAPM_POST_PMD |
@@ -745,6 +742,9 @@ static const struct snd_soc_dapm_route wm5110_dapm_routes[] = {
 	{ "Tone Generator 1", NULL, "TONE" },
 	{ "Tone Generator 2", NULL, "TONE" },
 
+	{ "Mic Mute Mixer", NULL, "Noise Mixer" },
+	{ "Mic Mute Mixer", NULL, "Mic Mixer" },
+
 	{ "AIF1 Capture", NULL, "AIF1TX1" },
 	{ "AIF1 Capture", NULL, "AIF1TX2" },
 	{ "AIF1 Capture", NULL, "AIF1TX3" },
@@ -842,13 +842,10 @@ static const struct snd_soc_dapm_route wm5110_dapm_routes[] = {
 	ARIZONA_MIXER_ROUTES("LHPF3", "LHPF3"),
 	ARIZONA_MIXER_ROUTES("LHPF4", "LHPF4"),
 
-	ARIZONA_MIXER_ROUTES("Mic Mute Mixer", "Noise"),
-	ARIZONA_MIXER_ROUTES("Mic Mute Mixer", "Mic"),
-
-	ARIZONA_MUX_ROUTES("ASRC1L", "ASRC1L"),
-	ARIZONA_MUX_ROUTES("ASRC1R", "ASRC1R"),
-	ARIZONA_MUX_ROUTES("ASRC2L", "ASRC2L"),
-	ARIZONA_MUX_ROUTES("ASRC2R", "ASRC2R"),
+	ARIZONA_MUX_ROUTES("ASRC1L"),
+	ARIZONA_MUX_ROUTES("ASRC1R"),
+	ARIZONA_MUX_ROUTES("ASRC2L"),
+	ARIZONA_MUX_ROUTES("ASRC2R"),
 
 	{ "HPOUT1L", NULL, "OUT1L" },
 	{ "HPOUT1R", NULL, "OUT1R" },
@@ -870,11 +867,6 @@ static const struct snd_soc_dapm_route wm5110_dapm_routes[] = {
 
 	{ "SPKDAT2L", NULL, "OUT6L" },
 	{ "SPKDAT2R", NULL, "OUT6R" },
-
-	{ "DRC1 Signal Activity", NULL, "DRC1L" },
-	{ "DRC1 Signal Activity", NULL, "DRC1R" },
-	{ "DRC2 Signal Activity", NULL, "DRC2L" },
-	{ "DRC2 Signal Activity", NULL, "DRC2R" },
 };
 
 static int wm5110_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
@@ -982,7 +974,6 @@ static int wm5110_codec_probe(struct snd_soc_codec *codec)
 		return ret;
 
 	arizona_init_spk(codec);
-	arizona_init_gpio(codec);
 
 	snd_soc_dapm_disable_pin(&codec->dapm, "HAPTICS");
 
@@ -1045,10 +1036,6 @@ static int __devinit wm5110_probe(struct platform_device *pdev)
 	if (wm5110 == NULL)
 		return -ENOMEM;
 	platform_set_drvdata(pdev, wm5110);
-
-	/* Set of_node to parent from the SPI device to allow DAPM to
-	 * locate regulator supplies */
-	pdev->dev.of_node = arizona->dev->of_node;
 
 	wm5110->core.arizona = arizona;
 	wm5110->core.num_inputs = 8;

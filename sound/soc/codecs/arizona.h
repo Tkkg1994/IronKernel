@@ -57,7 +57,7 @@
 #define ARIZONA_CLK_98MHZ  5
 #define ARIZONA_CLK_147MHZ 6
 
-#define ARIZONA_MAX_DAI  6
+#define ARIZONA_MAX_DAI  4
 #define ARIZONA_MAX_ADSP 4
 
 struct arizona;
@@ -147,8 +147,7 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
 	ARIZONA_MUX(name_str " Aux 5", &name##_aux5_mux), \
 	ARIZONA_MUX(name_str " Aux 6", &name##_aux6_mux)
 
-#define ARIZONA_MUX_ROUTES(widget, name) \
-	{ widget, NULL, name " Input" }, \
+#define ARIZONA_MUX_ROUTES(name) \
 	ARIZONA_MIXER_INPUT_ROUTES(name " Input")
 
 #define ARIZONA_MIXER_ROUTES(widget, name) \
@@ -178,32 +177,11 @@ extern int arizona_mixer_values[ARIZONA_NUM_MIXER_INPUTS];
 	ARIZONA_MIXER_ROUTES(name, name "L"), \
 	ARIZONA_MIXER_ROUTES(name, name "R")
 
-#define ARIZONA_SAMPLE_RATE_CONTROL(name, domain) \
-	SOC_VALUE_ENUM(name, arizona_sample_rate[(domain) - 2])
-
-#define ARIZONA_SAMPLE_RATE_CONTROL_DVFS(name, domain) \
-	SOC_VALUE_ENUM_EXT(name, arizona_sample_rate[(domain) - 2], \
-			snd_soc_get_value_enum_double, \
-			arizona_put_sample_rate_enum)
-
-#define ARIZONA_EQ_CONTROL(xname, xbase) \
-{	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, \
-	.info = snd_soc_bytes_info, .get = snd_soc_bytes_get, \
-	.put = arizona_eq_coeff_put, .private_value = \
-	((unsigned long)&(struct soc_bytes) \
-		{.base = xbase, .num_regs = 20, \
-		 .mask = ~ARIZONA_EQ1_B1_MODE }) }
-
 #define ARIZONA_RATE_ENUM_SIZE 4
-#define ARIZONA_SAMPLE_RATE_ENUM_SIZE 14
 extern const char *arizona_rate_text[ARIZONA_RATE_ENUM_SIZE];
 extern const int arizona_rate_val[ARIZONA_RATE_ENUM_SIZE];
-extern const char *arizona_sample_rate_text[ARIZONA_SAMPLE_RATE_ENUM_SIZE];
-extern const int arizona_sample_rate_val[ARIZONA_SAMPLE_RATE_ENUM_SIZE];
 
-extern const struct soc_enum arizona_sample_rate[];
 extern const struct soc_enum arizona_isrc_fsl[];
-extern const struct soc_enum arizona_fx_rate;
 
 extern const struct soc_enum arizona_in_vi_ramp;
 extern const struct soc_enum arizona_in_vd_ramp;
@@ -227,12 +205,6 @@ extern int arizona_out_ev(struct snd_soc_dapm_widget *w,
 extern int arizona_hp_ev(struct snd_soc_dapm_widget *w,
 			 struct snd_kcontrol *kcontrol,
 			 int event);
-
-extern int arizona_put_sample_rate_enum(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol);
-
-extern int arizona_eq_coeff_put(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_value *ucontrol);
 
 extern int arizona_set_sysclk(struct snd_soc_codec *codec, int clk_id,
 			      int source, unsigned int freq, int dir);
@@ -266,7 +238,6 @@ extern int arizona_set_fll(struct arizona_fll *fll, int source,
 			   unsigned int Fref, unsigned int Fout);
 
 extern int arizona_init_spk(struct snd_soc_codec *codec);
-extern int arizona_init_gpio(struct snd_soc_codec *codec);
 
 extern int arizona_init_dai(struct arizona_priv *priv, int dai);
 

@@ -303,9 +303,7 @@ static int wm_adsp_load(struct wm_adsp *dsp)
 		 wm_adsp_fw[dsp->fw].file);
 	file[PAGE_SIZE - 1] = '\0';
 
-	mutex_lock(dsp->fw_lock);
 	ret = request_firmware(&firmware, file, dsp->dev);
-	mutex_unlock(dsp->fw_lock);
 	if (ret != 0) {
 		adsp_err(dsp, "Failed to request '%s'\n", file);
 		goto out;
@@ -691,9 +689,7 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 		 wm_adsp_fw[dsp->fw].file);
 	file[PAGE_SIZE - 1] = '\0';
 
-	mutex_lock(dsp->fw_lock);
 	ret = request_firmware(&firmware, file, dsp->dev);
-	mutex_unlock(dsp->fw_lock);
 	if (ret != 0) {
 		adsp_warn(dsp, "Failed to request '%s'\n", file);
 		ret = 0;
@@ -817,7 +813,7 @@ static int wm_adsp_load_coeff(struct wm_adsp *dsp)
 				return -ENOMEM;
 			}
 
-			ret = regmap_raw_write(regmap, reg, buf,
+			ret = regmap_raw_write(regmap, reg, blk->data,
 					       le32_to_cpu(blk->len));
 			if (ret != 0) {
 				adsp_err(dsp,
@@ -968,6 +964,36 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 			return ret;
 		}
 
+		if (dsp->dvfs) {
+			ret = regmap_read(dsp->regmap,
+					  dsp->base + ADSP2_CLOCKING, &val);
+			if (ret != 0) {
+				dev_err(dsp->dev,
+					"Failed to read clocking: %d\n", ret);
+				return ret;
+			}
+
+			if ((val & ADSP2_CLK_SEL_MASK) >= 3) {
+				ret = regulator_enable(dsp->dvfs);
+				if (ret != 0) {
+					dev_err(dsp->dev,
+						"Failed to enable supply: %d\n",
+						ret);
+					return ret;
+				}
+
+				ret = regulator_set_voltage(dsp->dvfs,
+							    1800000,
+							    1800000);
+				if (ret != 0) {
+					dev_err(dsp->dev,
+						"Failed to raise supply: %d\n",
+						ret);
+					return ret;
+				}
+			}
+		}
+
 		ret = wm_adsp2_ena(dsp);
 		if (ret != 0)
 			return ret;
@@ -1006,6 +1032,21 @@ int wm_adsp2_event(struct snd_soc_dapm_widget *w,
 		regmap_write(dsp->regmap, dsp->base + ADSP2_WDMA_CONFIG_2, 0);
 		regmap_write(dsp->regmap, dsp->base + ADSP2_RDMA_CONFIG_1, 0);
 
+		if (dsp->dvfs) {
+			ret = regulator_set_voltage(dsp->dvfs, 1200000,
+						    1800000);
+			if (ret != 0)
+				dev_warn(dsp->dev,
+					 "Failed to lower supply: %d\n",
+					 ret);
+
+			ret = regulator_disable(dsp->dvfs);
+			if (ret != 0)
+				dev_err(dsp->dev,
+					"Failed to enable supply: %d\n",
+					ret);
+		}
+
 		while (!list_empty(&dsp->alg_regions)) {
 			alg_region = list_first_entry(&dsp->alg_regions,
 						      struct wm_adsp_alg_region,
@@ -1027,10 +1068,9 @@ err:
 }
 EXPORT_SYMBOL_GPL(wm_adsp2_event);
 
-int wm_adsp2_init(struct wm_adsp *adsp, struct mutex *fw_lock)
+int wm_adsp2_init(struct wm_adsp *adsp, bool dvfs)
 {
-	int ret, i;
-	const char **ctl_names;
+	int ret;
 
 	/*
 	 * Disable the DSP memory by default when in reset for a small
@@ -1045,23 +1085,34 @@ int wm_adsp2_init(struct wm_adsp *adsp, struct mutex *fw_lock)
 
 	INIT_LIST_HEAD(&adsp->alg_regions);
 
-	adsp->fw_lock = fw_lock;
-
-	if (!adsp->num_firmwares) {
-		if (!adsp->dev->of_node || wm_adsp_of_parse_adsp(adsp) <= 0) {
-			adsp->num_firmwares = WM_ADSP_NUM_FW;
-			adsp->firmwares = wm_adsp_fw;
+	if (dvfs) {
+		adsp->dvfs = devm_regulator_get(adsp->dev, "DCVDD");
+		if (IS_ERR(adsp->dvfs)) {
+			ret = PTR_ERR(adsp->dvfs);
+			dev_err(adsp->dev, "Failed to get DCVDD: %d\n", ret);
+			return ret;
 		}
-	} else {
-		ctl_names = devm_kzalloc(adsp->dev,
-				adsp->num_firmwares * sizeof(const char *),
-				GFP_KERNEL);
 
-		for (i = 0; i < adsp->num_firmwares; i++)
-			ctl_names[i] = adsp->firmwares[i].name;
+		ret = regulator_enable(adsp->dvfs);
+		if (ret != 0) {
+			dev_err(adsp->dev, "Failed to enable DCVDD: %d\n",
+				ret);
+			return ret;
+		}
 
-		wm_adsp_fw_enum[adsp->num - 1].max = adsp->num_firmwares;
-		wm_adsp_fw_enum[adsp->num - 1].texts = ctl_names;
+		ret = regulator_set_voltage(adsp->dvfs, 1200000, 1800000);
+		if (ret != 0) {
+			dev_err(adsp->dev, "Failed to initialise DVFS: %d\n",
+				ret);
+			return ret;
+		}
+
+		ret = regulator_disable(adsp->dvfs);
+		if (ret != 0) {
+			dev_err(adsp->dev, "Failed to disable DCVDD: %d\n",
+				ret);
+			return ret;
+		}
 	}
 
 	return 0;

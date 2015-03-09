@@ -78,8 +78,6 @@
 
 #define ARIZONA_MAX_AIF 3
 
-#define ARIZONA_MAX_DSP	4
-
 struct regulator_init_data;
 
 struct arizona_micbias {
@@ -184,6 +182,9 @@ struct arizona_pdata {
 
 	/** Mode for outputs */
 	bool out_mono[ARIZONA_MAX_OUTPUT];
+
+	/** Provide improved ultrasonic frequency response */
+	bool ultrasonic_response;
 
 	/** PDM speaker mute setting */
 	unsigned int spk_mute[ARIZONA_MAX_PDM_SPK];
