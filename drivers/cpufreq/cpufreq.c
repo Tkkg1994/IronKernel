@@ -93,7 +93,7 @@ static unsigned int hotplug_plus_one_core_value = 5;
 static unsigned int hotplug_plus_two_core_value = 90;
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 static unsigned int hotplug_enabled_flag = 1;
-static unsigned int hotplug_cpu_up_load_value = 4;
+static unsigned int hotplug_cpu_up_load_value = 25;
 static unsigned int hotplug_cpu_up_boost_value = 90;
 static unsigned int normalmin_freq_value = 250000;
 static unsigned int hotplug_cpu_down_hysteresis_value = 20;
