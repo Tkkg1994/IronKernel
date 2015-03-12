@@ -103,7 +103,6 @@ struct cfs_bandwidth {
 /* task group related information */
 struct task_group {
 	struct cgroup_subsys_state css;
-
 	bool notify_on_migrate;
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
@@ -602,7 +601,7 @@ static inline struct task_group *task_group(struct task_struct *p)
 
 static inline bool task_notify_on_migrate(struct task_struct *p)
 {
-	return false;
+return false;
 }
 
 #endif /* CONFIG_CGROUP_SCHED */
