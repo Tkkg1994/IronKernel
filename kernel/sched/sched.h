@@ -242,7 +242,7 @@ struct cfs_rq {
 	atomic64_t decay_counter, removed_load;
 	u64 last_decay;
 #endif	/* CONFIG_FAIR_GROUP_SCHED */
-/* These always depend on CONFIG_FAIR_GROUP_SCHED *
+/* These always depend on CONFIG_FAIR_GROUP_SCHED */
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	u64 tg_load_contrib;
 	u32 tg_runnable_contrib;
