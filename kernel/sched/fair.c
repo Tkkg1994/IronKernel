@@ -934,8 +934,6 @@ static u32 __compute_runnable_contrib(u64 n)
 	return contrib + runnable_avg_yN_sum[n];
 }
 
-}
-
 /*
  * We can represent the historical contribution to runnable average as the
  * coefficients of a geometric series.  To do this we sub-divide our runnable
@@ -5566,7 +5564,7 @@ void update_max_interval(void)
  * It checks each scheduling domain to see if it is due to be balanced,
  * and initiates a balancing operation if so.
  *
- * Balancing parameters are set up in arch_init_sched_domains.
+ * Balancing parameters are set up in init_sched_domains.
  */
 static void rebalance_domains(int cpu, enum cpu_idle_type idle)
 {
