@@ -3118,6 +3118,10 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
 
 #define LBF_ALL_PINNED	0x01
 #define LBF_NEED_BREAK	0x02
+#define LBF_NEED_BREAK	0x02 /* clears into HAD_BREAK */
+#define LBF_HAD_BREAK	0x04
+#define LBF_HAD_BREAKS	0x0C /* count HAD_BREAKs overflows into ABORT */
+#define LBF_ABORT	0x10
 
 struct lb_env {
 	struct sched_domain	*sd;
@@ -4494,7 +4498,7 @@ redo:
 		env.load_move	= imbalance;
 		env.src_cpu	= busiest->cpu;
 		env.src_rq	= busiest;
-		env.loop_max	= min_t(unsigned long, sysctl_sched_nr_migrate, busiest->nr_running);
+		env.loop_max	= min(sysctl_sched_nr_migrate, busiest->nr_running);
 
 more_balance:
 		local_irq_save(flags);
