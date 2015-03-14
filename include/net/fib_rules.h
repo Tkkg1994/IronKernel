@@ -24,7 +24,7 @@ struct fib_rule {
 	char			iifname[IFNAMSIZ];
 	char			oifname[IFNAMSIZ];
 	uid_t			uid_start;
-	uid_t			uid_end
+	uid_t			uid_end;
 	struct rcu_head		rcu;
 	struct net *		fr_net;
 };
