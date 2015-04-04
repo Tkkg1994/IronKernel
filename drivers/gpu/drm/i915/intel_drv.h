@@ -277,10 +277,7 @@ struct intel_unpin_work {
 	struct drm_i915_gem_object *old_fb_obj;
 	struct drm_i915_gem_object *pending_flip_obj;
 	struct drm_pending_vblank_event *event;
-	atomic_t pending;
-#define INTEL_FLIP_INACTIVE	0
-#define INTEL_FLIP_PENDING	1
-#define INTEL_FLIP_COMPLETE	2
+	int pending;
 	bool enable_stall_check;
 };
 

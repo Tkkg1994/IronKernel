@@ -293,18 +293,6 @@ failure:
 	atomic_add(buffers_added, &(pool->available));
 }
 
-/*
- * The final 8 bytes of the buffer list is a counter of frames dropped
- * because there was not a buffer in the buffer list capable of holding
- * the frame.
- */
-static void ibmveth_update_rx_no_buffer(struct ibmveth_adapter *adapter)
-{
-	__be64 *p = adapter->buffer_list_addr + 4096 - 8;
-
-	adapter->rx_no_buffer = be64_to_cpup(p);
-}
-
 /* replenish routine */
 static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
 {
@@ -320,7 +308,8 @@ static void ibmveth_replenish_task(struct ibmveth_adapter *adapter)
 			ibmveth_replenish_buffer_pool(adapter, pool);
 	}
 
-	ibmveth_update_rx_no_buffer(adapter);
+	adapter->rx_no_buffer = *(u64 *)(((char*)adapter->buffer_list_addr) +
+						4096 - 8);
 }
 
 /* empty and free ana buffer pool - also used to do cleanup in error paths */
@@ -703,7 +692,8 @@ static int ibmveth_close(struct net_device *netdev)
 
 	free_irq(netdev->irq, netdev);
 
-	ibmveth_update_rx_no_buffer(adapter);
+	adapter->rx_no_buffer = *(u64 *)(((char *)adapter->buffer_list_addr) +
+						4096 - 8);
 
 	ibmveth_cleanup(adapter);
 
@@ -1337,7 +1327,7 @@ static const struct net_device_ops ibmveth_netdev_ops = {
 static int __devinit ibmveth_probe(struct vio_dev *dev,
 				   const struct vio_device_id *id)
 {
-	int rc, i, mac_len;
+	int rc, i;
 	struct net_device *netdev;
 	struct ibmveth_adapter *adapter;
 	unsigned char *mac_addr_p;
@@ -1347,17 +1337,9 @@ static int __devinit ibmveth_probe(struct vio_dev *dev,
 		dev->unit_address);
 
 	mac_addr_p = (unsigned char *)vio_get_attribute(dev, VETH_MAC_ADDR,
-							&mac_len);
+							NULL);
 	if (!mac_addr_p) {
 		dev_err(&dev->dev, "Can't find VETH_MAC_ADDR attribute\n");
-		return -EINVAL;
-	}
-	/* Workaround for old/broken pHyp */
-	if (mac_len == 8)
-		mac_addr_p += 2;
-	else if (mac_len != 6) {
-		dev_err(&dev->dev, "VETH_MAC_ADDR attribute wrong len %d\n",
-			mac_len);
 		return -EINVAL;
 	}
 
@@ -1383,6 +1365,17 @@ static int __devinit ibmveth_probe(struct vio_dev *dev,
 	adapter->pool_config = 0;
 
 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
+
+	/*
+	 * Some older boxes running PHYP non-natively have an OF that returns
+	 * a 8-byte local-mac-address field (and the first 2 bytes have to be
+	 * ignored) while newer boxes' OF return a 6-byte field. Note that
+	 * IEEE 1275 specifies that local-mac-address must be a 6-byte field.
+	 * The RPA doc specifies that the first byte must be 10b, so we'll
+	 * just look for it to solve this 8 vs. 6 byte field issue
+	 */
+	if ((*mac_addr_p & 0x3) != 0x02)
+		mac_addr_p += 2;
 
 	adapter->mac_addr = 0;
 	memcpy(&adapter->mac_addr, mac_addr_p, 6);

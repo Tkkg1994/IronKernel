@@ -53,3 +53,4 @@ source "sound/soc/txx9/Kconfig"
 source "sound/soc/codecs/Kconfig"
 
 endif	# SND_SOC
+

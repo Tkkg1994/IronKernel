@@ -35,6 +35,14 @@
 
 struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
 
+struct ion_iovm_map {
+	struct list_head list;
+	unsigned int map_cnt;
+	struct device *dev;
+	dma_addr_t iova;
+	int region_id;
+};
+
 /**
  * struct ion_buffer - metadata for a particular buffer
  * @ref:		refernce count
@@ -84,6 +92,7 @@ struct ion_buffer {
 	struct sg_table *sg_table;
 	unsigned long *dirty;
 	struct list_head vmas;
+	struct list_head iovas;
 	/* used to track orphaned buffers */
 	int handle_count;
 	char task_comm[TASK_COMM_LEN];

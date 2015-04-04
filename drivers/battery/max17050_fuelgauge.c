@@ -2093,7 +2093,7 @@ static int get_fuelgauge_soc(struct i2c_client *client)
 
 	psy_do_property("battery", get,
 		POWER_SUPPLY_PROP_STATUS, value);
-
+#if 0
 	/* Algorithm for reducing time to fully charged (from MAXIM) */
 	if (value.intval != POWER_SUPPLY_STATUS_DISCHARGING &&
 		value.intval != POWER_SUPPLY_STATUS_FULL &&
@@ -2122,7 +2122,7 @@ static int get_fuelgauge_soc(struct i2c_client *client)
 			fuelgauge->info.full_check_flag = 3;
 	} else
 		fuelgauge->info.full_check_flag = 0;
-
+#endif
 	/*  Checks vcell level and tries to compensate SOC if needed.*/
 	/*  If jig cable is connected, then skip low batt compensation check. */
 	if (!fuelgauge->pdata->check_jig_status() &&

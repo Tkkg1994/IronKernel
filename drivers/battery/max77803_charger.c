@@ -25,8 +25,8 @@
 #define REDUCE_CURRENT_STEP	100
 #define MINIMUM_INPUT_CURRENT	300
 
-int SIOP_INPUT_LIMIT_CURRENT = 1200;
-int SIOP_CHARGING_LIMIT_CURRENT = 1000;
+#define SIOP_INPUT_LIMIT_CURRENT 1200
+#define SIOP_CHARGING_LIMIT_CURRENT 1000
 
 struct max77803_charger_data {
 	struct max77803_dev	*max77803;
@@ -95,6 +95,7 @@ struct max77803_charger_data {
 #endif
 	int		soft_reg_recovery_cnt;
 
+	bool is_mdock;
 	int pmic_ver;
 	int input_curr_limit_step;
 	int wpc_input_curr_limit_step;
@@ -396,6 +397,7 @@ static void max77803_set_charge_current(struct max77803_charger_data *charger,
 		__func__, reg_data, cur);
 }
 
+/*
 static int max77803_get_charge_current(struct max77803_charger_data *charger)
 {
 	u8 reg_data;
@@ -414,6 +416,7 @@ static int max77803_get_charge_current(struct max77803_charger_data *charger)
 	pr_debug("%s: get charge current: %dmA\n", __func__, get_current);
 	return get_current;
 }
+*/
 
 /* in soft regulation, current recovery operation */
 static void max77803_recovery_work(struct work_struct *work)
@@ -450,8 +453,7 @@ static void max77803_recovery_work(struct work_struct *work)
 				(charger->soft_reg_recovery_cnt + 1));
 
 		if (charger->siop_level < 100 &&
-			charger->cable_type == POWER_SUPPLY_TYPE_MAINS &&
-			charger->charging_current_max > SIOP_INPUT_LIMIT_CURRENT) {
+			charger->cable_type == POWER_SUPPLY_TYPE_MAINS) {
 			pr_info("%s : LCD on status and revocer current\n", __func__);
 			max77803_set_input_current(charger,
 					SIOP_INPUT_LIMIT_CURRENT);
@@ -838,13 +840,17 @@ static int sec_chg_get_property(struct power_supply *psy,
 		val->intval = max77803_get_health_state(charger);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
+#if defined(max77888_charger)
 		val->intval = max77803_get_input_current(charger);
+#else
+		val->intval = charger->charging_current_max;
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
 		val->intval = charger->charging_current;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		val->intval = max77803_get_charge_current(charger);
+		val->intval = max77803_get_input_current(charger);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		if (!charger->is_charging)
@@ -910,11 +916,19 @@ static int sec_chg_set_property(struct power_supply *psy,
 				| CHG_CNFG_00_DIS_MUIC_CTRL_MASK;
 
 			if (value.intval) {
+#if defined(CONFIG_CHAGALL)
+				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_02,
+					(1 << 7), (1 << 7));
+#endif
 				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_00,
 					en_chg_cnfg_00, mask_chg_cnfg_00);
 
 				pr_info("%s: ps enable\n", __func__);
 			} else {
+#if defined(CONFIG_CHAGALL)
+				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_02,
+					0, (1 << 7));
+#endif
 				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_00,
 					dis_chg_cnfg_00, mask_chg_cnfg_00);
 
@@ -932,6 +946,7 @@ static int sec_chg_set_property(struct power_supply *psy,
 		if (val->intval == POWER_SUPPLY_TYPE_BATTERY) {
 			charger->is_charging = false;
 			charger->soft_reg_recovery_cnt = 0;
+			charger->is_mdock = false;
 			set_charging_current = 0;
 			set_charging_current_max =
 				charger->pdata->charging_current[
@@ -949,6 +964,34 @@ static int sec_chg_set_property(struct power_supply *psy,
 			}
 		} else {
 			charger->is_charging = true;
+
+			if ((charger->cable_type == POWER_SUPPLY_TYPE_USB)
+				&& (charger->pdata->is_hc_usb)) {
+				pr_info("%s: high current usb setting\n", __func__);
+
+				charger->charging_current = charger->pdata->charging_current[
+					POWER_SUPPLY_TYPE_MAINS].fast_charging_current;
+				charger->charging_current_max =	charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MAINS].input_current_limit;
+			}
+
+			if (charger->is_mdock) { /* if mdock was already inserted, then check OTG, or NOTG state */
+				if (charger->cable_type == POWER_SUPPLY_TYPE_SMART_NOTG) {
+					charger->charging_current = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current;
+					charger->charging_current_max = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit;
+				} else if (charger->cable_type == POWER_SUPPLY_TYPE_SMART_OTG) {
+					charger->charging_current = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current - 300;
+					charger->charging_current_max = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit - 300;
+				}
+			} else { /* if mdock wasn't inserted, then check mdock state */
+				if (charger->cable_type == POWER_SUPPLY_TYPE_MDOCK_TA)
+					charger->is_mdock = true;
+			}
+
 			/* decrease the charging current according to siop level */
 			set_charging_current =
 				charger->charging_current * charger->siop_level / 100;
@@ -963,8 +1006,7 @@ static int sec_chg_set_property(struct power_supply *psy,
 
 			if (charger->siop_level < 100 &&
 				val->intval == POWER_SUPPLY_TYPE_MAINS) {
-				if (set_charging_current_max > SIOP_INPUT_LIMIT_CURRENT)
-					set_charging_current_max = SIOP_INPUT_LIMIT_CURRENT;
+				set_charging_current_max = SIOP_INPUT_LIMIT_CURRENT;
 				if (set_charging_current > SIOP_CHARGING_LIMIT_CURRENT)
 					set_charging_current = SIOP_CHARGING_LIMIT_CURRENT;
 			}
@@ -1012,15 +1054,18 @@ static int sec_chg_set_property(struct power_supply *psy,
 				current_now = usb_charging_current;
 
 			if (charger->cable_type == POWER_SUPPLY_TYPE_MAINS) {
-				if (charger->siop_level < 100 &&
-					charger->charging_current_max > SIOP_INPUT_LIMIT_CURRENT)
-						set_charging_current_max = SIOP_INPUT_LIMIT_CURRENT;
-					else
-						set_charging_current_max = charger->charging_current_max;
+				if (charger->siop_level < 100 ) {
+					set_charging_current_max =
+						SIOP_INPUT_LIMIT_CURRENT;
+				} else
+					set_charging_current_max =
+						charger->charging_current_max;
 
-					max77803_set_input_current(charger, set_charging_current_max);
-						if (current_now > SIOP_CHARGING_LIMIT_CURRENT)
-							current_now = SIOP_CHARGING_LIMIT_CURRENT;
+				if (charger->siop_level < 100 &&
+						current_now > SIOP_CHARGING_LIMIT_CURRENT)
+					current_now = SIOP_CHARGING_LIMIT_CURRENT;
+				max77803_set_input_current(charger,
+					set_charging_current_max);
 			}
 
 			max77803_set_charge_current(charger, current_now);
@@ -1265,22 +1310,28 @@ static irqreturn_t max77803_bypass_irq(int irq, void *data)
 	/* check and unlock */
 	check_charger_unlock_state(chg_data);
 
+	/* Due to timing issue, 0xB5 reg should be read at first to detect overcurrent limit.
+	*  If 0xB5's read after 0XB3, 0xB4, it's value is 0x00 even for the overcurrent limit case.
+	*/
+	max77803_read_reg(chg_data->max77803->i2c,
+				MAX77803_CHG_REG_CHG_DTLS_02,
+				&dtls_02);
+	pr_info("%s: CHG_DTLS_02(0xb5) = 0x%x\n", __func__, dtls_02);
+
 	max77803_read_reg(chg_data->max77803->i2c,
 				MAX77803_CHG_REG_CHG_DTLS_00,
 				&chgin_dtls);
 	max77803_read_reg(chg_data->max77803->i2c,
-					MAX77803_CHG_REG_CHG_DTLS_01, &chg_dtls);
-		chgin_dtls = ((chgin_dtls & MAX77803_CHGIN_DTLS) >>
+				MAX77803_CHG_REG_CHG_DTLS_01, &chg_dtls);
+	chgin_dtls = ((chgin_dtls & MAX77803_CHGIN_DTLS) >>
 				MAX77803_CHGIN_DTLS_SHIFT);
-		chg_dtls = ((chg_dtls & MAX77803_CHG_DTLS) >>
+	chg_dtls = ((chg_dtls & MAX77803_CHG_DTLS) >>
 				MAX77803_CHG_DTLS_SHIFT);
-	max77803_read_reg(chg_data->max77803->i2c,
-				MAX77803_CHG_REG_CHG_DTLS_02,
-				&dtls_02);
 
 	byp_dtls = ((dtls_02 & MAX77803_BYP_DTLS) >>
 				MAX77803_BYP_DTLS_SHIFT);
-	pr_info("%s: BYP_DTLS(0x%02x)\n", __func__, byp_dtls);
+	pr_info("%s: BYP_DTLS(0x%02x), chgin_dtls(0x%02x), chg_dtls(0x%02x)\n",
+		__func__, byp_dtls, chgin_dtls, chg_dtls);
 	vbus_state = max77803_get_vbus_state(chg_data);
 
 	if (byp_dtls & 0x1) {
@@ -1306,8 +1357,6 @@ static irqreturn_t max77803_bypass_irq(int irq, void *data)
 
 	return IRQ_HANDLED;
 }
-
-bool unstable_power_detection = true;
 
 static void max77803_chgin_isr_work(struct work_struct *work)
 {
@@ -1344,7 +1393,7 @@ static void max77803_chgin_isr_work(struct work_struct *work)
 			stable_count++;
 		else
 			stable_count = 0;
-		if (stable_count > 10 || !unstable_power_detection) {
+		if (stable_count > 10) {
 			pr_info("%s: irq(%d), chgin(0x%x), prev 0x%x\n",
 					__func__, charger->irq_chgin,
 					chgin_dtls, prev_chgin_dtls);

@@ -189,9 +189,9 @@ SECTIONS
 	__data_loc = ALIGN(4);		/* location in binary */
 	. = PAGE_OFFSET + TEXT_OFFSET;
 #else
+	__init_end = .;
 	. = ALIGN(THREAD_SIZE);
 	__data_loc = .;
-	__init_end = .;
 #endif
 
 	.data : AT(__data_loc) {

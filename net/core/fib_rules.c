@@ -41,7 +41,7 @@ int fib_default_rule_add(struct fib_rules_ops *ops,
 	r->uid_end = INVALID_UID;
 	r->fr_net = hold_net(ops->fro_net);
 
-	/* The lock is not required here, the list in unreacheable
+	/* The lock is not required here, the list in unreachable
 	 * at the moment this function is called */
 	list_add_tail(&r->list, &ops->rules_list);
 	return 0;
@@ -199,7 +199,7 @@ static int fib_uid_range_match(struct flowi *fl, struct fib_rule *rule)
 {
 	return (!uid_valid(rule->uid_start) && !uid_valid(rule->uid_end)) ||
 	       (uid_gte(fl->flowi_uid, rule->uid_start) &&
-		uid_lte(fl->flowi_uid, rule->uid_end));
+			uid_lte(fl->flowi_uid, rule->uid_end));
 }
 
 static int fib_rule_match(struct fib_rule *rule, struct fib_rules_ops *ops,
@@ -388,7 +388,7 @@ static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
 			unresolved = 1;
 	} else if (rule->action == FR_ACT_GOTO)
 		goto errout_free;
-
+		
 	/* UID start and end must either both be valid or both unspecified. */
 	rule->uid_start = rule->uid_end = INVALID_UID;
 	if (tb[FRA_UID_START] || tb[FRA_UID_END]) {
@@ -396,10 +396,11 @@ static int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
 			rule->uid_start = fib_nl_uid(tb[FRA_UID_START]);
 			rule->uid_end = fib_nl_uid(tb[FRA_UID_END]);
 		}
+		
 		if (!uid_valid(rule->uid_start) ||
-		    !uid_valid(rule->uid_end) ||
-		    !uid_lte(rule->uid_start, rule->uid_end))
-		goto errout_free;
+			!uid_valid(rule->uid_end) ||
+			!uid_lte(rule->uid_start, rule->uid_end))
+			goto errout_free;
 	}
 
 	err = ops->configure(rule, skb, frh, tb);
@@ -484,8 +485,7 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
 		if (frh->action && (frh->action != rule->action))
 			continue;
 
-		if (frh_get_table(frh, tb) &&
-		    (frh_get_table(frh, tb) != rule->table))
+		if (frh->table && (frh_get_table(frh, tb) != rule->table))
 			continue;
 
 		if (tb[FRA_PRIORITY] &&
@@ -507,7 +507,7 @@ static int fib_nl_delrule(struct sk_buff *skb, struct nlmsghdr* nlh, void *arg)
 		if (tb[FRA_FWMASK] &&
 		    (rule->mark_mask != nla_get_u32(tb[FRA_FWMASK])))
 			continue;
-
+			
 		if (tb[FRA_UID_START] &&
 		    !uid_eq(rule->uid_start, fib_nl_uid(tb[FRA_UID_START])))
 			continue;
@@ -635,7 +635,7 @@ static int fib_nl_fill_rule(struct sk_buff *skb, struct fib_rule *rule,
 
 	if (uid_valid(rule->uid_end))
 	     nla_put_uid(skb, FRA_UID_END, rule->uid_end);
-
+	
 	if (ops->fill(rule, skb, frh) < 0)
 		goto nla_put_failure;
 
@@ -773,13 +773,6 @@ static int fib_rules_event(struct notifier_block *this, unsigned long event,
 	case NETDEV_REGISTER:
 		list_for_each_entry(ops, &net->rules_ops, list)
 			attach_rules(&ops->rules_list, dev);
-		break;
-
-	case NETDEV_CHANGENAME:
-		list_for_each_entry(ops, &net->rules_ops, list) {
-			detach_rules(&ops->rules_list, dev);
-			attach_rules(&ops->rules_list, dev);
-		}
 		break;
 
 	case NETDEV_UNREGISTER:

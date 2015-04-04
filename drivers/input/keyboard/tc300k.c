@@ -1331,7 +1331,7 @@ static ssize_t tc300k_factory_mode(struct device *dev,
 		dev_notice(&client->dev, "factory mode\n");
 		cmd = TC300K_CMD_FAC_ON;
 	} else {
-		dev_notice(&client->dev, "normale mode\n");
+		dev_notice(&client->dev, "normal mode\n");
 		cmd = TC300K_CMD_FAC_OFF;
 	}
 
@@ -1396,10 +1396,10 @@ static ssize_t tc300k_glove_mode(struct device *dev,
 	}
 
 	if (scan_buffer == 1) {
-		dev_notice(&client->dev, "factory mode\n");
+		dev_notice(&client->dev, "glove mode\n");
 		cmd = TC300K_CMD_GLOVE_ON;
 	} else {
-		dev_notice(&client->dev, "normale mode\n");
+		dev_notice(&client->dev, "normal mode\n");
 		cmd = TC300K_CMD_GLOVE_OFF;
 	}
 
@@ -1667,6 +1667,11 @@ static int __devinit tc300k_probe(struct i2c_client *client,
 		&sec_touchkey_attr_group);
 	if (ret)
 		dev_err(&client->dev, "Failed to create sysfs group\n");
+
+	ret = sysfs_create_link(&data->sec_touchkey->kobj,
+		&data->input_dev->dev.kobj, "input");
+	if (ret)
+		dev_err(&client->dev, "Failed to connect link\n");
 
 	dev_info(&client->dev, "%s done\n", __func__);
 	return 0;

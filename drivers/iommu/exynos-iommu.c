@@ -293,9 +293,6 @@ static bool has_sysmmu_capable_pbuf(struct sysmmu_drvdata *drvdata,
 	if (__sysmmu_version(drvdata, idx, min) != 3)
 		return false;
 
-	if (*min == 3)
-		return false;
-
 	if ((pbuf[0].config & SYSMMU_PBUFCFG_WRITE) &&
 		(drvdata->prop & SYSMMU_PROP_WRITE))
 		return true;
@@ -457,10 +454,14 @@ static void __exynos_sysmmu_set_pbuf_ver31(struct sysmmu_drvdata *drvdata,
 
 	BUG_ON(num_bufs > 2);
 
+	__sysmmu_tlb_invalidate(drvdata->sfrbases[idx]);
+
 	if (num_bufs == 2) {
 		/* Separate PB mode */
 		cfg |= 2 << 28;
 
+		if (prefbuf[1].size == 0)
+			prefbuf[1].size = 1;
 		__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[1],
 					prefbuf[1].base, prefbuf[1].size, 1);
 	} else {
@@ -472,6 +473,8 @@ static void __exynos_sysmmu_set_pbuf_ver31(struct sysmmu_drvdata *drvdata,
 
 	__raw_writel(cfg, drvdata->sfrbases[idx] + REG_MMU_CFG);
 
+	if (prefbuf[0].size == 0)
+		prefbuf[0].size = 1;
 	__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[1],
 				prefbuf[0].base, prefbuf[0].size, 0);
 }
@@ -488,6 +491,9 @@ static void __exynos_sysmmu_set_pbuf_ver32(struct sysmmu_drvdata *drvdata,
 	num_bufs = __prepare_prefetch_buffers(drvdata, idx, prefbuf, 3);
 	if (num_bufs == 0)
 		return;
+
+	/* flushing previous PB settings */
+	__sysmmu_tlb_invalidate(drvdata->sfrbases[idx]);
 
 	cfg |= 7 << 16; /* enabling PB0 ~ PB2 */
 
@@ -506,9 +512,16 @@ static void __exynos_sysmmu_set_pbuf_ver32(struct sysmmu_drvdata *drvdata,
 		BUG();
 	}
 
-	for (i = 0; i < num_bufs; i++)
+	for (i = 0; i < num_bufs; i++) {
+		if (prefbuf[i].size == 0) {
+			dev_err(drvdata->sysmmu,
+				"%s: Trying to init PB[%d/%d]with zero-size\n",
+				__func__, idx, num_bufs);
+			prefbuf[i].size = 1;
+		}
 		__sysmmu_set_prefbuf(drvdata->sfrbases[idx] + pbuf_offset[2],
 			prefbuf[i].base, prefbuf[i].size, i);
+	}
 
 	__raw_writel(cfg, drvdata->sfrbases[idx] + REG_MMU_CFG);
 }
@@ -562,13 +575,21 @@ static void __exynos_sysmmu_set_pbuf_ver33(struct sysmmu_drvdata *drvdata,
 	}
 
 	num_bufs = __prepare_prefetch_buffers(drvdata, idx, prefbuf, num_pb);
-	if (num_bufs == 0) {
+	if ((num_bufs == 0) || (num_bufs > 6)) {
 		dev_err(drvdata->master,
 			"%s: Unable to initialize PB of %s -" \
 			"NUM_PB %d, numbufs %d\n",
 			__func__, drvdata->dbgname, num_pb, num_bufs);
 		return;
 	}
+
+	/* flushing previous PB settings */
+	lmm = __raw_readl(drvdata->sfrbases[idx] + REG_PB_LMM);
+	for (i = 0; i < find_num_pb(num_pb, lmm); i++) {
+		__raw_writel(i, drvdata->sfrbases[idx] + REG_PB_INDICATE);
+		__raw_writel(0, drvdata->sfrbases[idx] + REG_PB_CFG);
+	}
+	__sysmmu_tlb_invalidate(drvdata->sfrbases[idx]);
 
 	lmm = find_lmm_preset(num_pb, (unsigned int)num_bufs);
 	num_pb = find_num_pb(num_pb, lmm);
@@ -2200,12 +2221,12 @@ static void __init __create_debugfs_entry(struct sysmmu_drvdata *drvdata)
 		dev_err(drvdata->sysmmu,
 			"Failed to create debugfs file 'sysmmu_list'\n");
 
-	if (!debugfs_create_file("next_sibling", 0x444, drvdata->debugfs_root,
+	if (!debugfs_create_file("next_sibling", 0444, drvdata->debugfs_root,
 				drvdata->sysmmu, &debug_next_sibling_fops))
 		dev_err(drvdata->sysmmu,
 			"Failed to create debugfs file 'next_siblings'\n");
 
-	if (!debugfs_create_file("master", 0x444, drvdata->debugfs_root,
+	if (!debugfs_create_file("master", 0444, drvdata->debugfs_root,
 				drvdata->sysmmu, &debug_master_fops))
 		dev_err(drvdata->sysmmu,
 			"Failed to create debugfs file 'next_siblings'\n");

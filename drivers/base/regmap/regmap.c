@@ -16,8 +16,6 @@
 #include <linux/mutex.h>
 #include <linux/err.h>
 
-#include <linux/mfd/arizona/control.h>
-
 #define CREATE_TRACE_POINTS
 #include <trace/events/regmap.h>
 
@@ -50,7 +48,7 @@ bool regmap_readable(struct regmap *map, unsigned int reg)
 
 bool regmap_volatile(struct regmap *map, unsigned int reg)
 {
-	if (!map->format.format_write && !regmap_readable(map, reg))
+	if (!regmap_readable(map, reg))
 		return false;
 
 	if (map->volatile_reg)
@@ -71,7 +69,7 @@ bool regmap_precious(struct regmap *map, unsigned int reg)
 }
 
 static bool regmap_volatile_range(struct regmap *map, unsigned int reg,
-	size_t num)
+	unsigned int num)
 {
 	unsigned int i;
 
@@ -483,10 +481,6 @@ int _regmap_write(struct regmap *map, unsigned int reg,
 	int ret;
 	BUG_ON(!map->format.format_write && !map->format.format_val);
 
-	mutex_unlock(&map->lock);
-	arizona_control_regmap_hook(map, reg, &val);
-	mutex_lock(&map->lock);
-
 	if (!map->cache_bypass && map->format.format_write) {
 		ret = regcache_write(map, reg, val);
 		if (ret != 0)
@@ -606,11 +600,6 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
 	if (val_bytes == 1) {
 		wval = (void *)val;
 	} else {
-		if (!val_count) {
-			ret = -EINVAL;
-			goto out;
-		}
-
 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
 		if (!wval) {
 			ret = -ENOMEM;
@@ -928,7 +917,6 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
 		       unsigned int mask, unsigned int val)
 {
 	bool change;
-
 	return _regmap_update_bits(map, reg, mask, val, &change);
 }
 EXPORT_SYMBOL_GPL(regmap_update_bits);
