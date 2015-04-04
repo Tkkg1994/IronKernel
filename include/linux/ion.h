@@ -21,6 +21,12 @@
 #include <linux/dma-direction.h>
 #include <linux/dma-buf.h>
 
+dma_addr_t ion_iovmm_map(struct dma_buf_attachment *attachment,
+			 off_t offset, size_t size,
+			 enum dma_data_direction direction, int id);
+void ion_iovmm_unmap(struct dma_buf_attachment *attachment, dma_addr_t iova);
+
+
 struct ion_handle;
 /**
  * enum ion_heap_types - list of all possible types of heaps

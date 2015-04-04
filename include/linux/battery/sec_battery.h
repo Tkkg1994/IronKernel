@@ -243,8 +243,7 @@ enum {
 	BATT_TEST_CHARGE_CURRENT,
 #endif
 	BATT_INBAT_VOLTAGE,
+	BATT_HIGH_CURRENT_USB,
 };
-
-void charger_control_init(struct sec_battery_info *info);
 
 #endif /* __SEC_BATTERY_H */

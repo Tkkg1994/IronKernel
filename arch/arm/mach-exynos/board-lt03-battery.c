@@ -60,7 +60,7 @@ bool is_ovlo_state = false;
 #define	GPIO_FUEL_ALERT			EXYNOS5420_GPX1(5)
 #define	GPIO_FUEL_SCL_18V		EXYNOS5420_GPB0(4)
 #define	GPIO_FUEL_SDA_18V		EXYNOS5420_GPB0(3)
-#define	GPIO_TA_INT			EXYNOS5420_GPY7(3)
+#define	GPIO_TA_INT				EXYNOS5420_GPY7(3)
 */
 unsigned int lpcharge;
 EXPORT_SYMBOL(lpcharge);
@@ -80,9 +80,13 @@ static sec_charging_current_t charging_current_table[] = {
 	{1800,	2200,	250,	40*60},
 	{0,	0,	0,	0},
 	{0,	0,	0,	0},
-	{1000,	1000,	250,	40*60},	/* LAN hub */
-	{460,	460,	250,	40*60},	/*mhl usb*/
-	{0, 0,	0,	0},		/*power sharing*/
+	{1000,	1000,	250,	40*60},/* LAN hub */
+	{460,	460,	250,	40*60},/*mhl usb*/
+	{0, 0,	0,	0},/*power sharing*/
+	{900,	1200,	250,	40*60}, /* SMART_OTG */
+	{1500,	1500,	250,	40*60}, /* SMART_NOTG */
+	{1400,	1400,	250,	40*60}, /* MDOCK_TA */
+	{450,	450,	250,	40*60}  /* MDOCK_USB */
 };
 
 static bool sec_bat_adc_none_init(
@@ -212,11 +216,6 @@ static bool sec_bat_check_jig_status(void)
 		return false;
 }
 
-int mhl_class_usb = 300;
-int mhl_class_500 = 400;
-int mhl_class_900 = 700;
-int mhl_class_1500 = 1300;
-
 static int sec_bat_get_cable_from_extended_cable_type(
 	int input_extended_cable_type)
 {
@@ -280,23 +279,23 @@ static int sec_bat_get_cable_from_extended_cable_type(
 				break;
 			case ONLINE_POWER_TYPE_MHL_500:
 				cable_type = POWER_SUPPLY_TYPE_MISC;
-				charge_current_max = mhl_class_500;
-				charge_current = mhl_class_500;
+				charge_current_max = 400;
+				charge_current = 400;
 				break;
 			case ONLINE_POWER_TYPE_MHL_900:
 				cable_type = POWER_SUPPLY_TYPE_MISC;
-				charge_current_max = mhl_class_900;
-				charge_current = mhl_class_900;
+				charge_current_max = 700;
+				charge_current = 700;
 				break;
 			case ONLINE_POWER_TYPE_MHL_1500:
 				cable_type = POWER_SUPPLY_TYPE_MISC;
-				charge_current_max = mhl_class_1500;
-				charge_current = mhl_class_1500;
+				charge_current_max = 1300;
+				charge_current = 1300;
 				break;
 			case ONLINE_POWER_TYPE_USB:
 				cable_type = POWER_SUPPLY_TYPE_USB;
-				charge_current_max = mhl_class_usb;
-				charge_current = mhl_class_usb;
+				charge_current_max = 300;
+				charge_current = 300;
 				break;
 			default:
 				cable_type = cable_main;
@@ -763,6 +762,35 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #endif
 #elif defined(CONFIG_CHAGALL)/*USA, Canna use csc files for setting*/
 #if defined(CONFIG_TARGET_LOCALE_USA)
+#if defined(CONFIG_CHAGALL_LTE)
+#if defined(CONFIG_BATT_TEMP_TMO)
+	.temp_high_threshold_event = 540,
+	.temp_high_recovery_event = 480,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 540,
+	.temp_high_recovery_normal = 480,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 530,
+	.temp_high_recovery_lpm = 500,
+	.temp_low_threshold_lpm = 0,
+	.temp_low_recovery_lpm = 30,
+#else
+	.temp_high_threshold_event = 560,
+	.temp_high_recovery_event = 480,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 560,
+	.temp_high_recovery_normal = 480,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 530,
+	.temp_high_recovery_lpm = 480,
+	.temp_low_threshold_lpm = 0,
+	.temp_low_recovery_lpm = 30,
+#endif
+#else
 	.temp_high_threshold_event = 600,
 	.temp_high_recovery_event = 460,
 	.temp_low_threshold_event = -50,
@@ -775,6 +803,20 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_high_recovery_lpm = 480,
 	.temp_low_threshold_lpm = 0,
 	.temp_low_recovery_lpm = 30,
+#endif
+#elif defined(CONFIG_TARGET_LOCALE_BMC)
+	.temp_high_threshold_event = 540,
+	.temp_high_recovery_event = 470,
+	.temp_low_threshold_event = -50,
+	.temp_low_recovery_event = 0,
+	.temp_high_threshold_normal = 540,
+	.temp_high_recovery_normal = 470,
+	.temp_low_threshold_normal = -50,
+	.temp_low_recovery_normal = 0,
+	.temp_high_threshold_lpm = 540,
+	.temp_high_recovery_lpm = 470,
+	.temp_low_threshold_lpm = -50,
+	.temp_low_recovery_lpm = 0,
 #else
 	.temp_high_threshold_event = 550,
 	.temp_high_recovery_event = 470,
@@ -791,17 +833,17 @@ sec_battery_platform_data_t sec_battery_pdata = {
 #endif
 #elif defined(CONFIG_KLIMT)
 #if defined(CONFIG_TARGET_LOCALE_USA)
-	.temp_high_threshold_event = 510,
+	.temp_high_threshold_event = 530,
 	.temp_high_recovery_event = 460,
 	.temp_low_threshold_event = -50,
 	.temp_low_recovery_event = 0,
-	.temp_high_threshold_normal = 510,
+	.temp_high_threshold_normal = 530,
 	.temp_high_recovery_normal = 460,
 	.temp_low_threshold_normal = -50,
 	.temp_low_recovery_normal = 0,
 	.temp_high_threshold_lpm = 510,
 	.temp_high_recovery_lpm = 460,
-	.temp_low_threshold_lpm = -50,
+	.temp_low_threshold_lpm = -30,
 	.temp_low_recovery_lpm = 0,
 #else
 	.temp_high_threshold_event = 530,
@@ -863,8 +905,8 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.full_condition_type = SEC_BATTERY_FULL_CONDITION_SOC |
 		SEC_BATTERY_FULL_CONDITION_NOTIMEFULL |
 		SEC_BATTERY_FULL_CONDITION_VCELL,
-	.full_condition_soc = 97,
-	.full_condition_vcell = 4300,
+	.full_condition_soc = 95,
+	.full_condition_vcell = 4250,
 
 	.recharge_check_count = 2,
 	.recharge_condition_type =

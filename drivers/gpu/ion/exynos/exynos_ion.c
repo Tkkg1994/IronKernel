@@ -14,6 +14,7 @@
  *
  */
 
+#include <linux/export.h>
 #include <linux/err.h>
 #include <linux/ion.h>
 #include <linux/exynos_ion.h>
@@ -433,6 +434,41 @@ static char *ion_exynos_contig_heap_type[ION_EXYNOS_MAX_CONTIG_ID] = {
 	"reserved",
 	"secdma",
 };
+
+int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size)
+{
+	struct ion_exynos_contig_heap *contig_heap;
+	struct cma_info info;
+	int i;
+
+	if (region_id < 0 || region_id > ION_EXYNOS_MAX_CONTIG_ID) {
+		pr_err("%s: invalid region id=%d\n", __func__, region_id);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < num_heaps; i++) {
+		if (heaps[i]->id == EXYNOS_ION_HEAP_EXYNOS_CONTIG_ID)
+			break;
+	}
+
+	BUG_ON(i == num_heaps);
+
+	contig_heap = container_of(heaps[i],
+				struct ion_exynos_contig_heap, heap);
+
+	if (cma_info(&info, contig_heap->dev,
+			ion_exynos_contig_heap_type[region_id])) {
+		pr_err("%s: failed to get region info for %s\n", __func__,
+				ion_exynos_contig_heap_type[region_id]);
+		return -ENOMEM;
+	}
+
+	*phys = info.lower_bound;
+	*size = info.total_size;
+
+	return 0;
+}
+EXPORT_SYMBOL(ion_exynos_contig_heap_info);
 
 static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 					   struct ion_buffer *buffer,
@@ -1222,6 +1258,8 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 	int i;
 #endif
 
+	if (dir == DMA_TO_DEVICE)
+		return;
 	if (IS_ERR_OR_NULL(buffer))
 		BUG();
 
@@ -1266,10 +1304,11 @@ void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
 #else
 	bool flush_all = size >= ION_FLUSH_ALL_HIGHLIMIT ? true : false;
 #endif
+	if (dir == DMA_TO_DEVICE)
+		return;
 	pr_debug("%s: syncing for cpu %s, vaddr: %p, size: %d, offset: %ld\n",
 			__func__, dev ? dev_name(dev) : "null",
 			vaddr, size, offset);
-
 	if (flush_all)
 		flush_all_cpu_caches();
 	else if (!IS_ERR_OR_NULL(vaddr))
@@ -1287,6 +1326,8 @@ void exynos_ion_sync_sg_for_cpu(struct device *dev,
 					struct sg_table *sgt,
 					enum dma_data_direction dir)
 {
+	if (dir == DMA_TO_DEVICE)
+		return;
 	ion_device_sync(ion_exynos, sgt, dir, dmac_unmap_area, false);
 }
 EXPORT_SYMBOL(exynos_ion_sync_sg_for_cpu);

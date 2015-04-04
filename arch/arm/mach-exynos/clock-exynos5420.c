@@ -2622,7 +2622,7 @@ static struct clk exynos5420_init_clocks_off[] = {
 		.ctrlbit	= (1 << 28),
 	}, {
 		.name		= "g3d",
-#ifdef CONFIG_MALI_T6XX
+#if defined(CONFIG_MALI_T6XX) || defined(CONFIG_MALI_MIDGARD_WK04)
 		.devname	= "mali.0",
 #endif
 		.enable		= exynos5_clk_ip_g3d_ctrl,
@@ -3588,8 +3588,6 @@ static struct pll_div_data exynos5_vpll_div[] = {
 	{480000000, 2, 160, 2, 0,  0, 0},
 	{533000000, 3, 266, 2, 0,  0, 0},
 	{600000000, 2, 200, 2, 0,  0, 0},
-	{666000000, 2, 200, 2, 0,  0, 0},
-	{733000000, 3, 266, 2, 0,  0, 0},
 };
 
 PLL_2550(vpll_data, VPLL, exynos5_vpll_div);

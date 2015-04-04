@@ -250,6 +250,7 @@ enum s3c_fb_psr_mode {
 	S3C_FB_VIDEO_MODE = 0,
 	S3C_FB_DP_PSR_MODE = 1,
 	S3C_FB_MIPI_COMMAND_MODE = 2,
+	S3C_FB_VIDEO_PSR_MODE = 3,
 };
 
 /**
@@ -518,6 +519,9 @@ struct s3c_fb {
 	enum s3c_fb_psr_mode psr_mode;
 };
 
+static u32 s3c_fb_rgborder(int format);
+static u32 s3c_fb_get_pixel_format(struct fb_var_screeninfo *var);
+
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 static void remove_qos(void)
 {
@@ -556,6 +560,39 @@ void s3c_fb_psr_exit_from_touch(void)
 EXPORT_SYMBOL_GPL(s3c_fb_psr_exit_from_touch);
 #endif
 
+#if defined(CONFIG_FB_HW_TRIGGER)
+#define BTS_INIT_NONE		0
+#define BTS_INIT_START		1
+#define BTS_INIT_END		100
+#define BTS_INIT_THRESHOLD	5
+
+static unsigned int win_update_cnt;
+static struct delayed_work init_dvfs;
+static int g_bts_init_status;
+
+static inline void s3c_fb_reset_bts(void)
+{
+#if defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+	exynos5_update_media_layers(TYPE_FIMD1, 1);
+#endif
+	pm_qos_update_request(&exynos5_int_qos, FIMD_INT_BUS_LOW);
+	prev_overlap_cnt = 1;
+}
+
+static void init_dvfs_work(struct work_struct *ws)
+{
+	if (win_update_cnt < 1) {
+		if (g_bts_init_status == BTS_INIT_NONE || g_bts_init_status == BTS_INIT_END){
+			return;
+		} else if (g_bts_init_status<BTS_INIT_THRESHOLD) {
+			g_bts_init_status++;
+		} else if (g_bts_init_status < BTS_INIT_END) {
+			g_bts_init_status = BTS_INIT_END;
+			s3c_fb_reset_bts();
+		}
+	}
+}
+#endif
 static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 {
 	struct s3c_fb_platdata *pd = sfb->pdata;
@@ -919,9 +956,9 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 	case 8:
 		if (sfb->variant.palette[win->index] != 0) {
 			/* non palletised, A:1,R:2,G:3,B:2 mode */
-			var->red.offset		= 4;
+			var->red.offset		= 0;
 			var->green.offset	= 2;
-			var->blue.offset	= 0;
+			var->blue.offset	= 4;
 			var->red.length		= 5;
 			var->green.length	= 3;
 			var->blue.length	= 2;
@@ -943,9 +980,9 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 		var->bits_per_pixel	= 32;
 
 		/* 666 format */
-		var->red.offset		= 12;
+		var->red.offset		= 0;
 		var->green.offset	= 6;
-		var->blue.offset	= 0;
+		var->blue.offset	= 12;
 		var->red.length		= 6;
 		var->green.length	= 6;
 		var->blue.length	= 6;
@@ -953,9 +990,9 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 
 	case 16:
 		/* 16 bpp, 565 format */
-		var->red.offset		= 11;
+		var->red.offset		= 0;
 		var->green.offset	= 5;
-		var->blue.offset	= 0;
+		var->blue.offset	= 11;
 		var->red.length		= 5;
 		var->green.length	= 6;
 		var->blue.length	= 5;
@@ -970,11 +1007,11 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 	case 24:
 		/* our 24bpp is unpacked, so 32bpp */
 		var->bits_per_pixel	= 32;
-		var->red.offset		= 16;
+		var->red.offset		= 0;
 		var->red.length		= 8;
 		var->green.offset	= 8;
 		var->green.length	= 8;
-		var->blue.offset	= 0;
+		var->blue.offset	= 16;
 		var->blue.length	= 8;
 		break;
 
@@ -1423,6 +1460,7 @@ static int s3c_fb_set_par(struct fb_info *info)
 	int win_no = win->index;
 	u32 data;
 	int old_wincon;
+	int format;
 
 	dev_dbg(sfb->dev, "setting framebuffer parameters\n");
 
@@ -1486,6 +1524,9 @@ static int s3c_fb_set_par(struct fb_info *info)
 	data = vidw_alpha(win->variant.has_osd_alpha, 0xff, 0xff, 0xff);
 	writel(data, regs + VIDW_ALPHA1(win_no));
 
+	format = s3c_fb_get_pixel_format(var);
+	data = s3c_fb_rgborder(format);
+	writel(data, regs + WIN_RGB_ORDER(win_no));
 	/* preserve whether window was enabled */
 	data = old_wincon & WINCONx_ENWIN;
 
@@ -1810,7 +1851,7 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	shadow_protect_win(win, 0);
 
 #if defined(CONFIG_FB_I80IF) || defined(CONFIG_FB_HW_TRIGGER)
-	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
+	s3c_fb_enable_trigger(sfb);
 #endif
 
 	pm_runtime_put_sync(sfb->dev);
@@ -1835,7 +1876,10 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
+
+#if !defined(CONFIG_FB_I80IF) && !defined(CONFIG_FB_HW_TRIGGER)
 	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
+#endif
 #ifdef CONFIG_DEBUG_FS
 	irq_ctrl_reg &= ~VIDINTCON0_FIFOLEVEL_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FIFOLEVEL_EMPTY;
@@ -1846,12 +1890,12 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg |= VIDINTCON0_FIFIOSEL_WINDOW3;
 	irq_ctrl_reg |= VIDINTCON0_FIFIOSEL_WINDOW4;
 #endif
-
+#if !defined(CONFIG_FB_I80IF) && !defined(CONFIG_FB_HW_TRIGGER)
 	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
 	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL1_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FRAMESEL1_NONE;
-
+#endif
 	writel(irq_ctrl_reg, regs + VIDINTCON0);
 
 	s3c_fb_clk_ctrl(sfb, false);
@@ -1877,7 +1921,9 @@ static void s3c_fb_disable_irq(struct s3c_fb *sfb)
 #ifdef CONFIG_DEBUG_FS
 	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
 #endif
+#if !defined(CONFIG_FB_I80IF) && !defined(CONFIG_FB_HW_TRIGGER)
 	irq_ctrl_reg &= ~VIDINTCON0_INT_FRAME;
+#endif
 	irq_ctrl_reg &= ~VIDINTCON0_INT_ENABLE;
 
 	writel(irq_ctrl_reg, regs + VIDINTCON0);
@@ -1979,11 +2025,23 @@ int s3c_fb_enable_trigger_by_mdnie(struct device *fimd)
 	sfb->clk_idle_count = 0;
 
 	flush_kthread_worker(&sfb->control_clock_gating);
+
+	mutex_lock(&sfb->gate_lock);
+
 	s3c_fb_enable_clk(sfb);
 	if (!check_gate_disp1())
 		BUG();
 
 	s3c_fb_enable_trigger(sfb);
+
+	sfb->clk_idle_count = -1000;
+
+	if (!check_gate_disp1())
+		BUG();
+
+	sfb->clk_idle_count = 0;
+
+	mutex_unlock(&sfb->gate_lock);
 
 	dev_info(sfb->dev, "%s: \n", __func__);
 
@@ -1991,35 +2049,6 @@ int s3c_fb_enable_trigger_by_mdnie(struct device *fimd)
 }
 #endif
 
-#if defined(CONFIG_FB_HW_TRIGGER)
-void s3c_fb_fimd_trigger_set(struct s3c_fb *sfb)
-{
-	unsigned int data;
-
-	if (!check_gate_ip_disp1(sfb))
-		BUG();
-
-	data = readl(sfb->regs + TRIGCON);
-	data &= ~HWTRIGEN_PER_RGB;
-	writel(data, sfb->regs + TRIGCON);
-}
-
-int s3c_fb_enable_trigger_forcing(struct device *fimd, unsigned int enable)
-{
-	struct platform_device *pdev = to_platform_device(fimd);
-	struct s3c_fb *sfb = platform_get_drvdata(pdev);
-
-	if (!sfb || !sfb->output_on)
-		return -ENODEV;
-
-	if (!enable)
-		s3c_fb_fimd_trigger_set(sfb);
-	else if (sfb->trig_state == TRIG_UNMASKED)
-		s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
-
-	return 0;
-}
-#endif
 
 static irqreturn_t s3c_fb_te_irq(int irq, void *dev_id)
 {
@@ -2053,9 +2082,16 @@ static irqreturn_t s3c_fb_te_irq(int irq, void *dev_id)
 				data &= ~(HWTRGMASK_I80_RGB);
 				sfb->trig_state = TRIG_UNMASKED;
 				writel(data, sfb->regs + TRIGCON);
+#if defined(CONFIG_FB_HW_TRIGGER)
+				g_bts_init_status = BTS_INIT_START;
+#endif
 			}
 		}
 	}
+
+#if defined(CONFIG_FB_HW_TRIGGER)
+	queue_delayed_work(system_nrt_wq, &init_dvfs, 0);
+#endif
 #if defined(CONFIG_FB_I80IF)
 	if (sfb->clk_enabled == true && (!sfb->vsync_info.irq_refcount) &&
 			!s3c_fb_get_mipi_state(sfb)) {
@@ -2303,7 +2339,7 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		if (sfb->vsync_count >= MAX_PSR_VSYNC_COUNT) {
 			sfb->psr_enter_state = PSR_PRE_ENTER;
 			queue_kthread_work(&sfb->psr_worker,
-					&sfb->psr_work);				
+					&sfb->psr_work);
 		}
 	} else {
 		sfb->vsync_count = 0;
@@ -2587,17 +2623,53 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 #if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
 #ifdef CONFIG_ARCH_EXYNOS4
 	iovmm_unmap(sfb->dev, dma->dma_addr);
+#else
+	ion_iovmm_unmap(dma->attachment, dma->dma_addr);
 #endif
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_BIDIRECTIONAL);
 
 	exynos_ion_sync_dmabuf_for_cpu(sfb->dev, dma->dma_buf,
-					dma->dma_buf->size, DMA_FROM_DEVICE);
+					dma->dma_buf->size, DMA_TO_DEVICE);
 #endif
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 	dma_buf_put(dma->dma_buf);
 	ion_free(sfb->fb_ion_client, dma->ion_handle);
 	memset(dma, 0, sizeof(struct s3c_dma_buf_data));
+}
+
+static u32 s3c_fb_get_pixel_format(struct fb_var_screeninfo *var)
+{
+	u32 format = S3C_FB_PIXEL_FORMAT_RGBA_8888;
+
+	switch (var->bits_per_pixel) {
+	case 16:
+		if (var->red.offset == 0) {
+			if (var->transp.length == 1)
+				format = S3C_FB_PIXEL_FORMAT_RGBA_5551;
+			else
+				format = S3C_FB_PIXEL_FORMAT_RGB_565;
+		}
+		break;
+	case 32:
+		if (var->red.offset == 0) {
+			if (var->transp.length == 0)
+				format = S3C_FB_PIXEL_FORMAT_RGBX_8888;
+			else
+				format = S3C_FB_PIXEL_FORMAT_RGBA_8888;
+		}
+		else {
+			if (var->transp.length == 0)
+				format = S3C_FB_PIXEL_FORMAT_BGRX_8888;
+			else
+				format = S3C_FB_PIXEL_FORMAT_BGRA_8888;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return format;
 }
 
 static u32 s3c_fb_red_length(int format)
@@ -3056,7 +3128,6 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		sfb->windows[i]->prev_fix = sfb->windows[i]->fbinfo->fix;
 		sfb->windows[i]->prev_var = sfb->windows[i]->fbinfo->var;
 	}
-
 	for (i = 0; i < sfb->variant.nr_windows && !ret; i++) {
 		struct s3c_fb_win_config *config = &win_config[i];
 		struct s3c_fb_win *win = sfb->windows[i];
@@ -3130,6 +3201,11 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		win_data->fence = fd;
 
 		list_add_tail(&regs->list, &sfb->update_regs_list);
+#if defined(CONFIG_FB_HW_TRIGGER)
+		flush_delayed_work_sync(&init_dvfs);
+		win_update_cnt++;
+		g_bts_init_status = BTS_INIT_NONE;
+#endif
 		mutex_unlock(&sfb->update_regs_list_lock);
 		queue_kthread_work(&sfb->update_regs_worker,
 					&sfb->update_regs_work);
@@ -3349,6 +3425,9 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	prev_overlap_cnt = regs->win_overlap_cnt;
 #else
 	s3c_fb_update_pm_qos(sfb, regs);
+#endif
+#if defined(CONFIG_FB_HW_TRIGGER)
+	win_update_cnt--;
 #endif
 }
 
@@ -4813,11 +4892,6 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
 	platid = platform_get_device_id(pdev);
 	fbdrv = (struct s3c_fb_driverdata *)platid->driver_data;
 
-	if (ion_register_special_device(ion_exynos, dev)) {
-		dev_err(dev, "ION special device is already registered\n");
-		return -EBUSY;
-	}
-
 	if (fbdrv->variant.nr_windows > S3C_FB_MAX_WIN) {
 		dev_err(dev, "too many windows, cannot attach\n");
 		return -EINVAL;
@@ -4855,6 +4929,8 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
 	sfb->psr_mode = S3C_FB_MIPI_COMMAND_MODE;
 #elif defined(CONFIG_S5P_DP_PSR)
 	sfb->psr_mode = S3C_FB_DP_PSR_MODE;
+#elif defined(CONFIG_FB_HW_TRIGGER)
+	sfb->psr_mode = S3C_FB_VIDEO_PSR_MODE;
 #else
 	sfb->psr_mode = S3C_FB_VIDEO_MODE;
 #endif
@@ -4868,6 +4944,9 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
 	if (ret)
 		dev_warn(dev, "failed to initialize debugfs entry\n");
 
+#if defined(CONFIG_FB_HW_TRIGGER)
+	INIT_DELAYED_WORK(&init_dvfs, init_dvfs_work);
+#endif
 #ifdef CONFIG_ION_EXYNOS
 	INIT_LIST_HEAD(&sfb->update_regs_list);
 	mutex_init(&sfb->update_regs_list_lock);

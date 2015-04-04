@@ -58,6 +58,7 @@ extern const char *wb_reason_name[];
  * in a manner such that unspecified fields are set to zero.
  */
 struct writeback_control {
+	enum writeback_sync_modes sync_mode;
 	long nr_to_write;		/* Write this many pages, and decrement
 					   this for each page written */
 	long pages_skipped;		/* Pages which were not written */
@@ -70,14 +71,11 @@ struct writeback_control {
 	loff_t range_start;
 	loff_t range_end;
 
-	enum writeback_sync_modes sync_mode;
-
 	unsigned for_kupdate:1;		/* A kupdate writeback */
 	unsigned for_background:1;	/* A background writeback */
 	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
 	unsigned range_cyclic:1;	/* range_start is cyclic */
-	unsigned for_sync:1; 		/* sync(2) WB_SYNC_ALL writeback */
 };
 
 /*
@@ -96,7 +94,6 @@ long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
 				enum wb_reason reason);
 long wb_do_writeback(struct bdi_writeback *wb, int force_wait);
 void wakeup_flusher_threads(long nr_pages, enum wb_reason reason);
-void inode_wait_for_writeback(struct inode *inode);
 
 /* writeback.h requires fs.h; it, too, is not included from here. */
 static inline void wait_on_inode(struct inode *inode)
@@ -104,6 +101,13 @@ static inline void wait_on_inode(struct inode *inode)
 	might_sleep();
 	wait_on_bit(&inode->i_state, __I_NEW, inode_wait, TASK_UNINTERRUPTIBLE);
 }
+static inline void inode_sync_wait(struct inode *inode)
+{
+	might_sleep();
+	wait_on_bit(&inode->i_state, __I_SYNC, inode_wait,
+							TASK_UNINTERRUPTIBLE);
+}
+
 
 /*
  * mm/page-writeback.c
@@ -131,11 +135,6 @@ extern unsigned int dirty_expire_interval;
 extern int vm_highmem_is_dirtyable;
 extern int block_dump;
 extern int laptop_mode;
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
-extern int dyn_dirty_writeback_enabled;
-extern unsigned int dirty_writeback_active_interval;
-extern unsigned int dirty_writeback_suspend_interval;
-#endif
 
 extern int dirty_background_ratio_handler(struct ctl_table *table, int write,
 		void __user *buffer, size_t *lenp,
@@ -154,15 +153,6 @@ struct ctl_table;
 int dirty_writeback_centisecs_handler(struct ctl_table *, int,
 				      void __user *, size_t *, loff_t *);
 
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
-int dynamic_dirty_writeback_handler(struct ctl_table *, int,
-		void __user *, size_t *, loff_t *);
-int dirty_writeback_active_centisecs_handler(struct ctl_table *, int,
-		void __user *, size_t *, loff_t *);
-int dirty_writeback_suspend_centisecs_handler(struct ctl_table *, int,
-		void __user *, size_t *, loff_t *);
-#endif
-
 void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
 unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
 			       unsigned long dirty);
@@ -176,7 +166,14 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
 			    unsigned long start_time);
 
 void page_writeback_init(void);
-void balance_dirty_pages_ratelimited(struct address_space *mapping);
+void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+					unsigned long nr_pages_dirtied);
+
+static inline void
+balance_dirty_pages_ratelimited(struct address_space *mapping)
+{
+	balance_dirty_pages_ratelimited_nr(mapping, 1);
+}
 
 typedef int (*writepage_t)(struct page *page, struct writeback_control *wbc,
 				void *data);
