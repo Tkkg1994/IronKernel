@@ -1,0 +1,9 @@
+# edit here
+# def/undef for local target
+chagallwifi_usa_open="CONFIG_TARGET_LOCALE_USA=y"
+chagallwifi_chn_open="CONFIG_CHAGALL_WIFI=y CONFIG_WLAN_REGION_CODE=300 CONFIG_TARGET_LOCALE_CHN=y CONFIG_TOUCHSCREEN_CHAGALL_LTE_WIFI_CHN=y"
+chagallwifi_chn_demo="CONFIG_TARGET_LOCALE_DEMO=y CONFIG_WLAN_REGION_CODE=300 CONFIG_TARGET_LOCALE_CHN=y"
+chagallwifi_eur_demo="CONFIG_TARGET_LOCALE_DEMO=y"
+
+# do not edit below this line, we need a blank line at the end of file.
+
