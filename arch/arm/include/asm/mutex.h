@@ -12,10 +12,5 @@
  * which is the most efficient. For ARMv6+, we emit a pair of exclusive
  * accesses instead.
  */
-#if __LINUX_ARM_ARCH__ < 6
-/* On pre-ARMv6 hardware the swp based implementation is the most efficient. */
 #include <asm-generic/mutex-xchg.h>
-#else
-#include <asm-generic/mutex-dec.h>
-#endif
 #endif

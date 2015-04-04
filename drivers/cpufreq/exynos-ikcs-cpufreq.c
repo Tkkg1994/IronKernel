@@ -29,7 +29,6 @@
 #include <linux/pm_qos.h>
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
-#include <linux/sysfs_helpers.h>
 #include <linux/cpumask.h>
 #include <linux/fb.h>
 
@@ -83,9 +82,6 @@ static unsigned int freq_max[CA_END] __read_mostly;	/* Maximum (Big/Little) cloc
 
 #define ARM_INT_SKEW_FREQ	1600000
 #define ARM_INT_SKEW_FREQ_H	1800000
-
-#define ARM_MAX_VOLT		1362500
-#define KFC_MAX_VOLT		1362500
 
 static struct exynos_dvfs_info *exynos_info[CA_END];
 static struct exynos_dvfs_info exynos_info_CA7;
@@ -647,10 +643,12 @@ static int exynos_target(struct cpufreq_policy *policy,
 #endif
 	/* frequency and volt scaling */
 	ret = exynos_cpufreq_scale(target_freq, freqs[cur]->old, policy->cpu);
+	if (ret < 0)
+		goto out;
 
+	g_cpufreq = target_freq;
 out:
 	mutex_unlock(&cpufreq_lock);
-	g_cpufreq = target_freq;
 	return ret;
 }
 
@@ -728,6 +726,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 {
 	unsigned int freqCA7, freqCA15;
 	unsigned int bootfreqCA7, bootfreqCA15;
+	struct cpufreq_policy *policy;
 	int volt;
 
 	switch (pm_event) {
@@ -746,6 +745,24 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		exynos_info[CA7]->blocked = true;
 		exynos_info[CA15]->blocked = true;
 		mutex_unlock(&cpufreq_lock);
+
+		policy = cpufreq_cpu_get(0);
+		if (!policy) {
+			pr_err("%s: failed get cpu governor policy\n", __func__);
+			if (pm_qos_request_active(&max_cpu_qos_blank))
+				pm_qos_remove_request(&max_cpu_qos_blank);
+			return NOTIFY_BAD;
+		}
+
+		if (policy->cur >= STEP_LEVEL_CA15_MIN) {
+			if (pm_qos_request_active(&max_cpu_qos_blank))
+				pm_qos_remove_request(&max_cpu_qos_blank);
+
+			cpufreq_cpu_put(policy);
+			return NOTIFY_BAD;
+		}
+
+		cpufreq_cpu_put(policy);
 
 		bootfreqCA7 = VIRT_FREQ(get_boot_freq(CA7), CA7);
 		bootfreqCA15 = VIRT_FREQ(get_boot_freq(CA15), CA15);
@@ -885,97 +902,6 @@ static struct cpufreq_driver exynos_driver = {
 
 };
 
-/************************** CPU Voltage Control ************************/
-
-ssize_t show_V_table(struct cpufreq_policy *policy, char *buf, bool mv)
-{
-	cluster_type cur = CA15;
-	int i, len = 0;
-
-	for (i = 0; merge_freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
-		if (merge_freq_table[i].frequency != CPUFREQ_ENTRY_INVALID) {
-			cur = (merge_freq_table[i].frequency > STEP_LEVEL_CA7_MAX) ?
-				CA15 : CA7;
-
-			if (mv) {
-				len += sprintf(buf + len, "%dmhz: %d mV\n",
-					merge_freq_table[i].frequency / 1000,
-					exynos_info[cur]->volt_table[merge_index_table[i]] / 1000);
-			} else {
-				len += sprintf(buf + len, "%d %d \n", 
-					merge_freq_table[i].frequency / 1000,
-					exynos_info[cur]->volt_table[merge_index_table[i]]);
-			}
-		}
-        }
-
-	return len;
-}
-
-ssize_t store_V_table(struct cpufreq_policy *policy, 
-				const char *buf, size_t count, bool mv) {
-
-	int i, tokens, rest, invalid_offset;
-	ssize_t tsize = cpufreq_get_table_size(merge_freq_table, CA15);
-	cluster_type cur = CA15;
-	int t[tsize];
-
-	invalid_offset = 0;
-
-	if ((tokens = read_into((int*)&t, tsize, buf, count)) < 0)
-		return -EINVAL;
-
-	mutex_lock(&cpufreq_lock);
-
-	for (i = 0; i < tokens; i++) {
-		while (merge_freq_table[i + invalid_offset].frequency == CPUFREQ_ENTRY_INVALID)
-			++invalid_offset;
-
-		cur = (merge_freq_table[i + invalid_offset].frequency > STEP_LEVEL_CA7_MAX)
-			? CA15 : CA7;
-
-		if (mv)
-			t[i] *= 1000;
-
-		if ((rest = t[i] % 6250) != 0)
-			t[i] += 6250 - rest;
-
-		if (cur == CA15) {
-			sanitize_min_max(t[i], 600000, ARM_MAX_VOLT);
-		} else {
-			sanitize_min_max(t[i], 600000, KFC_MAX_VOLT);
-		}
-
-		exynos_info[cur]->volt_table[merge_index_table[i + invalid_offset]] = t[i];
-	}
-
-	mutex_unlock(&cpufreq_lock);
-
-	return count;
-}
-
-ssize_t show_uV_table(struct cpufreq_policy *policy, char *buf)
-{
-	return show_V_table(policy, buf, false);
-}
-
-ssize_t store_uV_table(struct cpufreq_policy *policy, 
-				 const char *buf, size_t count)
-{
-	return store_V_table(policy, buf, count, false);
-}
-
-ssize_t show_mV_table(struct cpufreq_policy *policy, char *buf)
-{
-	return show_V_table(policy, buf, true);
-}
-
-ssize_t store_mV_table(struct cpufreq_policy *policy, 
-				 const char *buf, size_t count)
-{
-	return store_V_table(policy, buf, count, true);
-}
-
 /************************** sysfs interface ************************/
 
 static ssize_t show_freq_table(struct kobject *kobj,
@@ -989,9 +915,7 @@ static ssize_t show_freq_table(struct kobject *kobj,
 	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
 
 	for (i = 0; merge_freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
-		if (merge_freq_table[i].frequency != CPUFREQ_ENTRY_INVALID && 
-			merge_freq_table[i].frequency <= 1900000 &&
-			merge_freq_table[i].frequency >= 250000)
+		if (merge_freq_table[i].frequency != CPUFREQ_ENTRY_INVALID)
 			count += snprintf(&buf[count], pr_len, "%d ",
 				merge_freq_table[i].frequency);
         }
@@ -1278,7 +1202,7 @@ struct freq_qos_val {
 
 static void get_boot_freq_qos(struct freq_qos_val *boot_freq_qos)
 {
-#if defined(CONFIG_RTC_DRV_MAX77802) || defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
+#if defined(CONFIG_RTC_DRV_MAX77802)
 	if (pmic_is_jig_attached) {
 #if defined(CONFIG_TARGET_LOCALE_DEMO)
 		boot_freq_qos->min_freq = 1000000;
@@ -1290,6 +1214,25 @@ static void get_boot_freq_qos(struct freq_qos_val *boot_freq_qos)
 		boot_freq_qos->min_timeout_us = 360000 * 1000;
 		boot_freq_qos->max_freq = 1000000;
 		boot_freq_qos->max_timeout_us = 360000 * 1000;
+#endif
+	} else {
+		boot_freq_qos->min_freq = 1500000;
+		boot_freq_qos->min_timeout_us = 40000 * 1000;
+		boot_freq_qos->max_freq = 1500000;
+		boot_freq_qos->max_timeout_us = 40000 * 1000;
+	}
+#elif defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
+	if (pmic_is_jig_attached) {
+#if defined(CONFIG_TARGET_LOCALE_DEMO)
+		boot_freq_qos->min_freq = 1000000;
+		boot_freq_qos->min_timeout_us = 900000 * 1000;
+		boot_freq_qos->max_freq = 1000000;
+		boot_freq_qos->max_timeout_us = 900000 * 1000;
+#else
+		boot_freq_qos->min_freq = 1000000;
+		boot_freq_qos->min_timeout_us = 500000 * 1000;
+		boot_freq_qos->max_freq = 1000000;
+		boot_freq_qos->max_timeout_us = 500000 * 1000;
 #endif
 	} else {
 		boot_freq_qos->min_freq = 1500000;
@@ -1403,6 +1346,14 @@ static int __init exynos_cpufreq_init(void)
 	register_reboot_notifier(&exynos_cpufreq_reboot_notifier);
 	exynos_tmu_add_notifier(&exynos_tmu_nb);
 
+        /* blocking frequency scale before acquire boot lock */
+#if !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE) && !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
+	mutex_lock(&cpufreq_lock);
+	exynos_info[CA7]->blocked = true;
+	exynos_info[CA15]->blocked = true;
+	mutex_unlock(&cpufreq_lock);
+#endif
+
 	if (cpufreq_register_driver(&exynos_driver)) {
 		pr_err("%s: failed to register cpufreq driver\n", __func__);
 		goto err_cpufreq;
@@ -1449,6 +1400,14 @@ static int __init exynos_cpufreq_init(void)
 	pm_qos_add_request(&boot_min_cpu_qos, PM_QOS_CPU_FREQ_MIN, 0);
 	pm_qos_update_request_timeout(&boot_min_cpu_qos, boot_freq_qos.min_freq,
 			boot_freq_qos.min_timeout_us);
+
+        /* unblocking frequency scale */
+#if !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE) && !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
+	mutex_lock(&cpufreq_lock);
+	exynos_info[CA7]->blocked = false;
+	exynos_info[CA15]->blocked = false;
+	mutex_unlock(&cpufreq_lock);
+#endif
 
 	exynos_cpufreq_init_done = true;
 

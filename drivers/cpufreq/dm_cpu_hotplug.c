@@ -25,8 +25,8 @@
 #include <linux/suspend.h>
 
 #define	COLD_THRESHOLD	20
-#define NORMALMAX_FREQ	2000000
-#define NORMALMIN_FREQ	200000
+#define NORMALMAX_FREQ	1900000
+#define NORMALMIN_FREQ	250000
 #define POLLING_MSEC	100
 
 struct cpu_load_info {
@@ -53,12 +53,6 @@ static enum hotplug_mode prev_mode;
 static unsigned int delay = POLLING_MSEC;
 
 static bool exynos_dm_hotplug_disable;
-
-int screen_on_hotplug = 0;
-module_param(screen_on_hotplug, int, 0660);
-
-int hotplug_freq = NORMALMIN_FREQ;
-module_param(hotplug_freq, int, 0660);
 
 static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
 {
@@ -238,13 +232,11 @@ static enum hotplug_mode diagnose_condition(void)
 
 	ret = CHP_NORMAL;
 
-	if (cur_load_freq > hotplug_freq)
+	if (cur_load_freq > NORMALMIN_FREQ)
 		low_stay = 0;
-	else if (cur_load_freq <= hotplug_freq && low_stay <= 5)
+	else if (cur_load_freq <= NORMALMIN_FREQ && low_stay <= 5)
 		low_stay++;
-	if (low_stay > 5 && screen_on_hotplug > 0)
-		ret = CHP_LOW_POWER;
-	else if (low_stay > 5 && !lcd_is_on)
+	if (low_stay > 5 && !lcd_is_on)
 		ret = CHP_LOW_POWER;
 
 	return ret;

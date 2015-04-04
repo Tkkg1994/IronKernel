@@ -28,7 +28,7 @@
 #endif
 
 ENTRY(cpu_v7_proc_init)
-	ret	lr
+	mov	pc, lr
 ENDPROC(cpu_v7_proc_init)
 
 ENTRY(cpu_v7_proc_fin)
@@ -36,7 +36,7 @@ ENTRY(cpu_v7_proc_fin)
 	bic	r0, r0, #0x1000			@ ...i............
 	bic	r0, r0, #0x0006			@ .............ca.
 	mcr	p15, 0, r0, c1, c0, 0		@ disable caches
-	ret	lr
+	mov	pc, lr
 ENDPROC(cpu_v7_proc_fin)
 
 /*
@@ -59,7 +59,7 @@ ENTRY(cpu_v7_reset)
  THUMB(	bic	r1, r1, #1 << 30 )		@ SCTLR.TE (Thumb exceptions)
 	mcr	p15, 0, r1, c1, c0, 0		@ disable MMU
 	isb
-	bx	r0
+	mov	pc, r0
 ENDPROC(cpu_v7_reset)
 	.popsection
 
@@ -73,7 +73,7 @@ ENDPROC(cpu_v7_reset)
 ENTRY(cpu_v7_do_idle)
 	dsb					@ WFI may enter a low-power mode
 	wfi
-	ret	lr
+	mov	pc, lr
 ENDPROC(cpu_v7_do_idle)
 
 ENTRY(cpu_v7_dcache_clean_area)
@@ -85,7 +85,7 @@ ENTRY(cpu_v7_dcache_clean_area)
 	bhi	1b
 	dsb
 #endif
-	ret	lr
+	mov	pc, lr
 ENDPROC(cpu_v7_dcache_clean_area)
 
 	string	cpu_v7_name, "ARMv7 Processor"
@@ -274,7 +274,7 @@ ENTRY(cpu_v7_setup_cp15)
 #endif
 #endif
 4:
-	ret	lr
+	mov	pc, lr
 ENDPROC(cpu_v7_setup_cp15)
 
 	__CPUINIT
@@ -297,9 +297,6 @@ __v7_ca9mp_setup:
 __v7_ca7mp_setup:
 __v7_ca15mp_setup:
 	mov     r10, #0
-	mrc	p15, 0, r0, c1, c0, 1
-	orr	r0, #(1<<24)			@ Enable NCSE in ACTLR
-	mrc	p15, 0, r0, c1, c0, 1
 1:
 #ifdef CONFIG_SMP
 	ALT_SMP(mrc     p15, 0, r0, c1, c0, 1)
@@ -307,7 +304,7 @@ __v7_ca15mp_setup:
 	tst     r0, #(1 << 6)                   @ SMP/nAMP mode enabled?
 	orreq   r0, r0, #(1 << 6)               @ Enable SMP/nAMP mode
 	orreq   r0, r0, r10                     @ Enable CPU-specific SMP bits
-	mcreq	p15, 0, r0, c1, c0, 1
+	mcreq   p15, 0, r0, c1, c0, 1
 #endif
 __v7_setup:
 	adr     r12, __v7_setup_stack           @ the local stack
@@ -323,6 +320,7 @@ __v7_setup:
 
 	mov     r10, #0
 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
+	dsb
 #ifdef CONFIG_MMU
 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
@@ -331,7 +329,6 @@ __v7_setup:
 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
 #endif
-	dsb					@ Complete invalidations
 #ifndef CONFIG_ARM_THUMBEE
 	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
 	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
@@ -357,7 +354,7 @@ __v7_setup:
 	bic	r0, r0, r5			@ clear bits them
 	orr	r0, r0, r6			@ set them
  THUMB(	orr	r0, r0, #1 << 30	)	@ Thumb exceptions
-	ret	lr				@ return to head.S:__ret
+	mov	pc, lr				@ return to head.S:__ret
 ENDPROC(__v7_setup)
 
 	.align	2
@@ -428,7 +425,7 @@ __v7_ca9mp_proc_info:
 __v7_ca7mp_proc_info:
 	.long	0x410fc070
 	.long	0xff0ffff0
-	__v7_proc __v7_ca7mp_setup
+	__v7_proc __v7_ca7mp_setup, hwcaps = HWCAP_IDIV
 	.size	__v7_ca7mp_proc_info, . - __v7_ca7mp_proc_info
 
 	/*
@@ -438,7 +435,7 @@ __v7_ca7mp_proc_info:
 __v7_ca15mp_proc_info:
 	.long	0x410fc0f0
 	.long	0xff0ffff0
-	__v7_proc __v7_ca15mp_setup
+	__v7_proc __v7_ca15mp_setup, hwcaps = HWCAP_IDIV
 	.size	__v7_ca15mp_proc_info, . - __v7_ca15mp_proc_info
 
 	/*

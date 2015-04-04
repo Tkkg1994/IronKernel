@@ -795,7 +795,7 @@ set_rcvbuf:
 
 	case SO_PEEK_OFF:
 		if (sock->ops->set_peek_off)
-			ret = sock->ops->set_peek_off(sk, val);
+			sock->ops->set_peek_off(sk, val);
 		else
 			ret = -EOPNOTSUPP;
 		break;
@@ -815,20 +815,15 @@ EXPORT_SYMBOL(sock_setsockopt);
 
 
 void cred_to_ucred(struct pid *pid, const struct cred *cred,
-		   struct ucred *ucred, bool use_effective)
+		   struct ucred *ucred)
 {
 	ucred->pid = pid_vnr(pid);
 	ucred->uid = ucred->gid = -1;
 	if (cred) {
 		struct user_namespace *current_ns = current_user_ns();
 
-		if (use_effective) {
-			ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
-			ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
-		} else {
-			ucred->uid = user_ns_map_uid(current_ns, cred, cred->uid);
-			ucred->gid = user_ns_map_gid(current_ns, cred, cred->gid);
-		}
+		ucred->uid = user_ns_map_uid(current_ns, cred, cred->euid);
+		ucred->gid = user_ns_map_gid(current_ns, cred, cred->egid);
 	}
 }
 EXPORT_SYMBOL_GPL(cred_to_ucred);
@@ -989,8 +984,7 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
 		struct ucred peercred;
 		if (len > sizeof(peercred))
 			len = sizeof(peercred);
-		cred_to_ucred(sk->sk_peer_pid, sk->sk_peer_cred,
-			      &peercred, true);
+		cred_to_ucred(sk->sk_peer_pid, sk->sk_peer_cred, &peercred);
 		if (copy_to_user(optval, &peercred, len))
 			return -EFAULT;
 		goto lenout;
@@ -1093,6 +1087,18 @@ static void sock_copy(struct sock *nsk, const struct sock *osk)
 #endif
 }
 
+/*
+ * caches using SLAB_DESTROY_BY_RCU should let .next pointer from nulls nodes
+ * un-modified. Special care is taken when initializing object to zero.
+ */
+static inline void sk_prot_clear_nulls(struct sock *sk, int size)
+{
+	if (offsetof(struct sock, sk_node.next) != 0)
+		memset(sk, 0, offsetof(struct sock, sk_node.next));
+	memset(&sk->sk_node.pprev, 0,
+	       size - offsetof(struct sock, sk_node.pprev));
+}
+
 void sk_prot_clear_portaddr_nulls(struct sock *sk, int size)
 {
 	unsigned long nulls1, nulls2;
@@ -1120,8 +1126,13 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
 	slab = prot->slab;
 	if (slab != NULL) {
 		sk = kmem_cache_alloc(slab, priority & ~__GFP_ZERO);
-		if (!sk)
+		if (!sk) {
+// ------------- START of KNOX_VPN ------------------//
+            sk->knox_uid = current->cred->uid;
+            sk->knox_pid = current->tgid;
+// ------------- END of KNOX_VPN -------------------//
 			return sk;
+		}
 		if (priority & __GFP_ZERO) {
 			if (prot->clear_sk)
 				prot->clear_sk(sk, prot->obj_size);
@@ -1140,6 +1151,11 @@ static struct sock *sk_prot_alloc(struct proto *prot, gfp_t priority,
 		if (!try_module_get(prot->owner))
 			goto out_free_sec;
 		sk_tx_queue_clear(sk);
+
+// ------------- START of KNOX_VPN ------------------//
+        sk->knox_uid = current->cred->uid;
+        sk->knox_pid = current->tgid;
+// ------------- END of KNOX_VPN -------------------//
 	}
 
 	return sk;

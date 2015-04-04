@@ -1,6 +1,7 @@
 config ARM
 	bool
 	default y
+	select HAVE_AOUT
 	select HAVE_DMA_API_DEBUG
 	select HAVE_IDE if PCI || ISA || PCMCIA
 	select HAVE_MEMBLOCK
@@ -1457,7 +1458,6 @@ config ARM_ERRATA_798181
 endmenu
 
 source "arch/arm/common/Kconfig"
-source "arch/arm/hotplug/Kconfig"
 
 menu "Bus support"
 
@@ -2350,13 +2350,6 @@ config NEON
 	help
 	  Say Y to include support code for NEON, the ARMv7 Advanced SIMD
 	  Extension.
-
-config KERNEL_MODE_NEON
-	bool "Support for NEON in kernel mode"
-	default y
-	depends on NEON && AEABI
-	help
-	  Say Y to include support for NEON in kernel mode.
 
 endmenu
 
