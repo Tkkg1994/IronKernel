@@ -1,8 +1,0 @@
---- mm/internal.h
-+++ mm/internal.h
-@@ -309,3 +309,5 @@
- extern u64 hwpoison_filter_flags_value;
- extern u64 hwpoison_filter_memcg;
- extern u32 hwpoison_filter_enable;
-+
-+extern void set_pageblock_order(void);
