@@ -1,12 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 4
 SUBLEVEL = 106
-<<<<<<< HEAD
 EXTRAVERSION = 
-=======
-EXTRAVERSION =
-NAME = Saber-toothed Squirrel
->>>>>>> 03a7449... Enabled SavagedZen and Scary governor + added back earlysuspend
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
