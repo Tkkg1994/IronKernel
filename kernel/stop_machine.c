@@ -338,6 +338,7 @@ static struct smp_hotplug_thread cpu_stop_threads = {
 	.park			= cpu_stop_park,
 	.pre_unpark		= cpu_stop_unpark,
 	.selfparking		= true,
+};
 
 static int __init cpu_stop_init(void)
 {
