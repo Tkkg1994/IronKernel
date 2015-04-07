@@ -1249,7 +1249,7 @@ static int crypt_decode_key(u8 *key, char *hex, unsigned int size)
 	return 0;
 }
 
-static void crypt_free_tfms(struct crypt_config *cc, int cpu)
+static void crypt_free_tfms(struct crypt_config *cc)
 {
 	unsigned i;
 

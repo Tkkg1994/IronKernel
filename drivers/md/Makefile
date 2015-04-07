@@ -19,32 +19,32 @@ raid456-y	+= raid5.o
 # themselves, and md.o may use the personalities when it 
 # auto-initialised.
 
-obj-$(CONFIG_MD_LINEAR)		+= linear.o
-obj-$(CONFIG_MD_RAID0)		+= raid0.o
-obj-$(CONFIG_MD_RAID1)		+= raid1.o
-obj-$(CONFIG_MD_RAID10)		+= raid10.o
-obj-$(CONFIG_MD_RAID456)	+= raid456.o
-obj-$(CONFIG_MD_MULTIPATH)	+= multipath.o
-obj-$(CONFIG_MD_FAULTY)		+= faulty.o
-obj-$(CONFIG_BLK_DEV_MD)	+= md-mod.o
-obj-$(CONFIG_BLK_DEV_DM)	+= dm-mod.o
-obj-$(CONFIG_BLK_DEV_DM_BUILTIN) += dm-builtin.o
-obj-$(CONFIG_DM_BUFIO)		+= dm-bufio.o
-obj-$(CONFIG_DM_CRYPT)		+= dm-crypt.o
-obj-$(CONFIG_DM_DELAY)		+= dm-delay.o
-obj-$(CONFIG_DM_FLAKEY)		+= dm-flakey.o
-obj-$(CONFIG_DM_MULTIPATH)	+= dm-multipath.o dm-round-robin.o
-obj-$(CONFIG_DM_MULTIPATH_QL)	+= dm-queue-length.o
-obj-$(CONFIG_DM_MULTIPATH_ST)	+= dm-service-time.o
-obj-$(CONFIG_DM_SNAPSHOT)	+= dm-snapshot.o
+obj-$(CONFIG_MD_LINEAR)			+= linear.o
+obj-$(CONFIG_MD_RAID0)			+= raid0.o
+obj-$(CONFIG_MD_RAID1)			+= raid1.o
+obj-$(CONFIG_MD_RAID10)			+= raid10.o
+obj-$(CONFIG_MD_RAID456)		+= raid456.o
+obj-$(CONFIG_MD_MULTIPATH)		+= multipath.o
+obj-$(CONFIG_MD_FAULTY)			+= faulty.o
+obj-$(CONFIG_BLK_DEV_MD)		+= md-mod.o
+obj-$(CONFIG_BLK_DEV_DM)		+= dm-mod.o
+obj-$(CONFIG_BLK_DEV_DM_BUILTIN)	+= dm-builtin.o
+obj-$(CONFIG_DM_BUFIO)			+= dm-bufio.o
+obj-$(CONFIG_DM_CRYPT)			+= dm-crypt.o
+obj-$(CONFIG_DM_DELAY)			+= dm-delay.o
+obj-$(CONFIG_DM_FLAKEY)			+= dm-flakey.o
+obj-$(CONFIG_DM_MULTIPATH)		+= dm-multipath.o dm-round-robin.o
+obj-$(CONFIG_DM_MULTIPATH_QL)		+= dm-queue-length.o
+obj-$(CONFIG_DM_MULTIPATH_ST)		+= dm-service-time.o
+obj-$(CONFIG_DM_SNAPSHOT)		+= dm-snapshot.o
 obj-$(CONFIG_DM_PERSISTENT_DATA)	+= persistent-data/
-obj-$(CONFIG_DM_MIRROR)		+= dm-mirror.o dm-log.o dm-region-hash.o
-obj-$(CONFIG_DM_LOG_USERSPACE)	+= dm-log-userspace.o
-obj-$(CONFIG_DM_ZERO)		+= dm-zero.o
-obj-$(CONFIG_DM_RAID)	+= dm-raid.o
+obj-$(CONFIG_DM_MIRROR)			+= dm-mirror.o dm-log.o dm-region-hash.o
+obj-$(CONFIG_DM_LOG_USERSPACE)		+= dm-log-userspace.o
+obj-$(CONFIG_DM_ZERO)			+= dm-zero.o
+obj-$(CONFIG_DM_RAID)			+= dm-raid.o
 obj-$(CONFIG_DM_THIN_PROVISIONING)	+= dm-thin-pool.o
-obj-$(CONFIG_DM_VERITY)		+= dm-verity.o
+obj-$(CONFIG_DM_VERITY)			+= dm-verity.o
 
 ifeq ($(CONFIG_DM_UEVENT),y)
-dm-mod-objs			+= dm-uevent.o
+dm-mod-objs				+= dm-uevent.o
 endif
