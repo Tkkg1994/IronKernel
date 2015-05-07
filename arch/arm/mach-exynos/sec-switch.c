@@ -59,7 +59,7 @@ static struct switch_dev switch_dock = {
 #include <linux/i2c/touchkey_i2c.h>
 #endif
 
-#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI
+#ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4
 #include <linux/i2c/synaptics_rmi.h>
 #endif
 #ifdef CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_I2C

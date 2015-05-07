@@ -413,6 +413,7 @@ static void requeue_inode(struct inode *inode, struct bdi_writeback *wb,
 		 * We didn't write back all the pages.  nfs_writepages()
 		 * sometimes bales out without doing anything.
 		 */
+		inode->i_state |= I_DIRTY_PAGES;
 		if (wbc->nr_to_write <= 0) {
 			/* Slice used up. Queue for next turn. */
 			requeue_io(inode, wb);
@@ -534,6 +535,7 @@ writeback_single_inode(struct inode *inode, struct bdi_writeback *wb,
 	if (!(inode->i_state & I_DIRTY))
 		goto out;
 	inode->i_state |= I_SYNC;
+	inode->i_state &= ~I_DIRTY_PAGES;
 	spin_unlock(&inode->i_lock);
 
 	ret = __writeback_single_inode(inode, wb, wbc);
