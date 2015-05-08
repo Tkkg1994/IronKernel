@@ -313,3 +313,7 @@ ifdef CONFIG_MSM_SUBSYSTEM_RESTART
 	obj-y += subsystem_notif.o
 	obj-y += subsystem_restart.o
 endif
+
+ifeq ($(CONFIG_INTELLI_PLUG),y)
+obj-y	+= intelli_plug.o
+endif
