@@ -57,7 +57,7 @@ extern unsigned int get_hotplug_cpu_down_hysteresis(void);
 
 static unsigned int hotplug_enabled_flag = 1;
 static unsigned int hotplug_cpu_up_load_value = 4;
-static unsigned int hotplug_cpu_up_boost_value = 90;
+static unsigned int hotplug_cpu_up_boost_value = 0;
 static unsigned int hotplug_cpu_down_hysteresis_value = 20;
 static s64 hotplug_cpu_down_delay_value = 300000000;
 static bool hotplug_need_boost;
@@ -260,18 +260,17 @@ static enum hotplug_mode diagnose_condition(void)
 {
 	int ret;
 	int hotplug_freq = get_normalmin_freq();
-	
+
 	ret = CHP_NORMAL;
 
 	if (cur_load_freq > hotplug_freq && low_stay > 0)
-		low_stay = -1;
+		low_stay -= 1;
 	else if (cur_load_freq <= hotplug_freq && low_stay <= 5)
 		low_stay++;
 	if (low_stay > 5 && screen_on_hotplug > 0)
 		ret = CHP_LOW_POWER;
-	else if (low_stay > 5 { // && !lcd_is_on)
+	else if (low_stay > 5  && !lcd_is_on)
 		ret = CHP_LOW_POWER;
-	}
 	
 	return ret;
 }
@@ -288,7 +287,7 @@ static void do_hotplug(int cpus_needed, struct cpumask *free_cores) {
 	if (cpus_needed > 0 && prev_mode == CHP_NORMAL) {
 		for (i = 1; i < NR_CPUS && cpus_needed > 0; i++) {
 			struct cpu_load_info *i_load_info;
-			if (cpu_online(i)) 
+			if (cpu_online(i))
 				continue;
 #ifdef DEBUG_HOTPLUG
 			pr_info("do_hotplug: cpu%d cpu_up: num_online_cpus()=%d, cpus_needed=%d\n", 
@@ -354,7 +353,7 @@ static void hotplug_cpus(void) {
 			if (hotplug_need_boost)
 				hotplug_need_boost = false;
 		} else {
-			unsigned long load 
+			unsigned long load
 					= freq_load + (cpu_up_threshold * hotplug_cpu_down_hysteresis_value / 100);
 #ifdef DEBUG_HOTPLUG
 			pr_info("hotplug_cpus: cpu%d, cpus_needed=%d, cpu_up_threshold=%lu, load=%lu\n",
@@ -369,16 +368,16 @@ static void hotplug_cpus(void) {
 	cpumask_clear(&free_cores);
 
 #ifdef DEBUG_HOTPLUG
-	pr_info("hotplug_cpus: online_cpus=%d, cpus_needed=%d, free_cores=%d, hotplug_need_boost=%d\n", 
+	pr_info("hotplug_cpus: online_cpus=%d, cpus_needed=%d, free_cores=%d, hotplug_need_boost=%d\n",
 			num_online_cpus(), cpus_needed, cpumask_weight(&free_cores), hotplug_need_boost);
 #endif
 
-	if (!cpus_needed 
+	if (!cpus_needed
 			|| (cpus_online == NR_CPUS && cpus_needed > 0)
 			|| (cpus_online == 1 && cpus_needed < 0))
 		return;
-		
-		
+
+
 	if (cpus_needed < 0 && cpus_online > 1) {
 		for (j = 1; j < cpumask_weight(cpu_online_mask); j++) {
 			unsigned int n;
@@ -393,7 +392,7 @@ static void hotplug_cpus(void) {
 #ifdef DEBUG_HOTPLUG
 				pr_info("hotplug_cpus: cpu%d, i_load_info->cpu_up_timestamp=%lli, target_time=%llu\n", i, i_load_info->cpu_up_timestamp, target_time);
 #endif
-				if (!cpumask_test_cpu(i, &free_cores) 
+				if (!cpumask_test_cpu(i, &free_cores)
 						&& i_load_info->load_factor <= min_cpu_load
 						&& (!lcd_is_on || target_time > i_load_info->cpu_up_timestamp)) {
 					min_cpu_load = i_load_info->load_factor;
@@ -403,7 +402,7 @@ static void hotplug_cpus(void) {
 			if (min_cpu_load < INT_MAX) {
 				cpumask_set_cpu(n, &free_cores);
 #ifdef DEBUG_HOTPLUG
-				pr_info("hotplug_cpus: n=%d, free_cores=%d, min_cpu_load=%u\n", 
+				pr_info("hotplug_cpus: n=%d, free_cores=%d, min_cpu_load=%u\n",
 					n, cpumask_weight(&free_cores), min_cpu_load);
 #endif
 			}
@@ -416,7 +415,7 @@ static void hotplug_cpus(void) {
 
 	if (cpus_needed > 0 || cpumask_weight(&free_cores)) {
 #ifdef DEBUG_HOTPLUG
-	for_each_cpu(i, &free_cores) 
+	for_each_cpu(i, &free_cores)
 		pr_info("hotplug_cpus: for_each_cpus: free_cores=%d\n", i);
 #endif
 		do_hotplug(cpus_needed, &free_cores);

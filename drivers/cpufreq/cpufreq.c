@@ -88,13 +88,10 @@ extern ssize_t hlpr_get_gpu_gov_int_table(char *buf);
 extern void hlpr_set_gpu_gov_int_table(int gpu_table[]);
 extern ssize_t hlpr_get_gpu_gov_cpu_table(char *buf);
 extern void hlpr_set_gpu_gov_cpu_table(int gpu_table[]);
-static unsigned int hotplug_enabled_flag = 0;
-static unsigned int hotplug_plus_one_core_value = 5;
-static unsigned int hotplug_plus_two_core_value = 90;
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 static unsigned int hotplug_enabled_flag = 1;
 static unsigned int hotplug_cpu_up_load_value = 25;
-static unsigned int hotplug_cpu_up_boost_value = 90;
+static unsigned int hotplug_cpu_up_boost_value = 0;
 static unsigned int normalmin_freq_value = 250000;
 static unsigned int hotplug_cpu_down_hysteresis_value = 20;
 #endif
@@ -445,6 +442,7 @@ show_one(cpuinfo_max_freq, cpuinfo.max_freq);
 show_one(cpuinfo_transition_latency, cpuinfo.transition_latency);
 show_one(scaling_min_freq, min);
 show_one(scaling_max_freq, max);
+show_one(cpu_utilization, util);
 
 static ssize_t show_scaling_cur_freq(
 	struct cpufreq_policy *policy, char *buf)
@@ -689,7 +687,7 @@ static ssize_t store_normalmin_freq(struct cpufreq_policy *policy, const char *b
  if (ret != 1)
  return -EINVAL;
 
-if (value >= 100000 && value <= 2100000)
+if (value >= 100000 && value <= 2000000)
 	normalmin_freq_value = value;
 else
 	return
@@ -950,7 +948,7 @@ cpufreq_freq_attr_ro(scaling_cur_freq);
 cpufreq_freq_attr_ro(bios_limit);
 cpufreq_freq_attr_ro(related_cpus);
 cpufreq_freq_attr_ro(affected_cpus);
-cpufreq_freq_attr_ro(scaling_cur_freq_gpu);
+cpufreq_freq_attr_ro(cpu_utilization);
 cpufreq_freq_attr_rw(scaling_min_freq);
 cpufreq_freq_attr_rw(scaling_max_freq);
 cpufreq_freq_attr_rw(scaling_governor);
@@ -959,14 +957,12 @@ cpufreq_freq_attr_rw(mV_table);
 cpufreq_freq_attr_rw(uV_table);
 cpufreq_freq_attr_rw(scaling_min_freq_gpu);
 cpufreq_freq_attr_rw(scaling_max_freq_gpu);
+cpufreq_freq_attr_ro(scaling_cur_freq_gpu);
 cpufreq_freq_attr_rw(GPU_gov_table);
 cpufreq_freq_attr_rw(GPU_volt_table);
 cpufreq_freq_attr_rw(GPU_gov_mif_table);
 cpufreq_freq_attr_rw(GPU_gov_int_table);
 cpufreq_freq_attr_rw(GPU_gov_cpu_table);
-cpufreq_freq_attr_rw(hotplug_enable);
-cpufreq_freq_attr_rw(hotplug_plus_one_core);
-cpufreq_freq_attr_rw(hotplug_plus_two_core);
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 cpufreq_freq_attr_rw(hotplug_enabled);
 cpufreq_freq_attr_rw(hotplug_cpu_up_load);
@@ -982,6 +978,7 @@ static struct attribute *default_attrs[] = {
 	&scaling_min_freq.attr,
 	&scaling_max_freq.attr,
 	&affected_cpus.attr,
+	&cpu_utilization.attr,
 	&related_cpus.attr,
 	&scaling_governor.attr,
 	&scaling_driver.attr,
@@ -998,7 +995,6 @@ static struct attribute *default_attrs[] = {
 	&GPU_gov_mif_table.attr,
 	&GPU_gov_int_table.attr,
 	&GPU_gov_cpu_table.attr,
-	&GPU_volt_table.attr,
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 	&hotplug_enabled.attr,
 	&hotplug_cpu_up_load.attr,
