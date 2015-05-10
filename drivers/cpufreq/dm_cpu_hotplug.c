@@ -39,16 +39,10 @@ struct cpu_load_info {
 static DEFINE_PER_CPU(struct cpu_load_info, cur_cpu_info);
 static DEFINE_MUTEX(dm_hotplug_lock);
 
-extern void set_min_gpu_freq(unsigned int freq);
 static int cpu_util[NR_CPUS];
 static struct pm_qos_request max_cpu_qos_hotplug;
 static unsigned int cur_load_freq = 0;
 static bool lcd_is_on;
-extern unsigned int get_hotplug_enabled(void);
-extern void set_hotplug_enabled(unsigned int state);
-extern unsigned int get_hotplug_plus_one_core(void);
-extern unsigned int get_hotplug_plus_two_core(void);
-extern unsigned int get_normalmin_freq(void);
 
 enum hotplug_mode {
 	CHP_NORMAL,
@@ -132,7 +126,7 @@ static int fb_state_change(struct notifier_block *nb,
 	switch (blank) {
 	case FB_BLANK_POWERDOWN:
 		lcd_is_on = false;
-		//pr_info("LCD is off\n");
+		pr_info("LCD is off\n");
 		break;
 	case FB_BLANK_UNBLANK:
 		/*
@@ -157,8 +151,7 @@ static int __ref __cpu_hotplug(struct cpumask *be_out_cpus)
 {
 	int i = 0;
 	int ret = 0;
-	unsigned int hotplug_enabled = get_hotplug_enabled();
-	
+
 	mutex_lock(&dm_hotplug_lock);
 	if (exynos_dm_hotplug_disable ||
 			cpumask_weight(be_out_cpus) >= NR_CPUS) {
@@ -173,11 +166,9 @@ static int __ref __cpu_hotplug(struct cpumask *be_out_cpus)
 			if (ret)
 				break;
 		} else {
-			if (hotplug_enabled == 0) {
-				ret = cpu_up(i);
-				if (ret)
-					break;
-			}
+			ret = cpu_up(i);
+			if (ret)
+				break;
 		}
 	}
 	mutex_unlock(&cpufreq_lock);
@@ -198,14 +189,14 @@ static int dynamic_hotplug(enum hotplug_mode mode)
 
 	switch (mode) {
 	case CHP_LOW_POWER:
-		delay = POLLING_MSEC * (lcd_is_on ? 0.5 : 4);
+		delay = POLLING_MSEC;
 		for (i=1; i < NR_CPUS; i++)
 			cpumask_set_cpu(i, &out_target);
 		ret = __cpu_hotplug(&out_target);
 		break;
 	case CHP_NORMAL:
 	default:
-		delay = POLLING_MSEC * 2;
+		delay = POLLING_MSEC;
 		if (cpumask_weight(cpu_online_mask) < NR_CPUS)
 			ret = __cpu_hotplug(&out_target);
 		break;
@@ -214,8 +205,6 @@ static int dynamic_hotplug(enum hotplug_mode mode)
 	return ret;
 }
 
-unsigned int last_hotplug_enabled_value;
-
 static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 					unsigned long pm_event, void *v)
 {
@@ -223,19 +212,12 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 	case PM_SUSPEND_PREPARE:
 		mutex_lock(&dm_hotplug_lock);
 		exynos_dm_hotplug_disable = true;
-		if (get_hotplug_enabled() == 1) {
-			last_hotplug_enabled_value = 1;
-			set_hotplug_enabled(0);
-		}
 		mutex_unlock(&dm_hotplug_lock);
 		break;
 
 	case PM_POST_SUSPEND:
 		mutex_lock(&dm_hotplug_lock);
 		exynos_dm_hotplug_disable = false;
-		if (get_hotplug_enabled() != last_hotplug_enabled_value) {
-			set_hotplug_enabled(1);
-		}
 		mutex_unlock(&dm_hotplug_lock);
 		break;
 	}
@@ -253,24 +235,18 @@ static int low_stay = 0;
 static enum hotplug_mode diagnose_condition(void)
 {
 	int ret;
-	int hotplug_freq = get_normalmin_freq();
-	
+
 	ret = CHP_NORMAL;
 
-<<<<<<< HEAD
 	if (cur_load_freq > hotplug_freq)
 		low_stay = 0;
 	else if (cur_load_freq <= hotplug_freq && low_stay <= 5)
 		low_stay++;
 	if (low_stay > 5 && screen_on_hotplug > 0)
 		ret = CHP_LOW_POWER;
-	else if (low_stay > 5 { // && !lcd_is_on)
+	else if (low_stay > 5 && !lcd_is_on)
 		ret = CHP_LOW_POWER;
-		set_min_gpu_freq(100);
-	} else {
-		set_min_gpu_freq(266);
-	}
-	
+
 	return ret;
 }
 
@@ -280,14 +256,8 @@ static void calc_load(void)
 	unsigned int cpu_util_sum = 0;
 	int cpu = 0;
 	unsigned int i;
-	int cores_needed = 0;
-	struct cpumask free_cores;
-	unsigned int hotplug_enabled, hotplug_plus_one_core, hotplug_plus_two_core;
-	
+
 	policy = cpufreq_cpu_get(cpu);
-	hotplug_enabled = get_hotplug_enabled();
-	hotplug_plus_one_core = get_hotplug_plus_one_core();
-	hotplug_plus_two_core = get_hotplug_plus_two_core();
 
 	if (!policy) {
 		pr_err("Invalid policy\n");
@@ -326,51 +296,19 @@ static void calc_load(void)
 		cpu_util[i] = load;
 		cpu_util_sum += load;
 
-		load_freq = load * policy->cur / policy->max;
-		
-		if (hotplug_enabled == 1 && cpu_online(i)) {
-			if (load_freq > hotplug_plus_one_core * num_online_cpus()
-				|| load_freq > hotplug_plus_two_core) {
-				cores_needed++;
-				if (load_freq > hotplug_plus_two_core)
-					cores_needed++;
-			} else {
-				cores_needed--;
-				cpumask_set_cpu(i, &free_cores);
-			}
-		} 
-		
+		load_freq = load * policy->cur;
+
 		if (policy->cur > cur_load_freq)
 			cur_load_freq = policy->cur;
 	}
 
-	if (hotplug_enabled == 1) {
-		mutex_lock(&dm_hotplug_lock);
-		if (cores_needed > 0 && num_online_cpus() < NR_CPUS) {
-			for (i = 1; i < NR_CPUS && cores_needed > 0; i++) {
-				if (!cpu_online(i)) {
-					cpu_up(i);
-					cores_needed--;
-				}
-			}
-		} else if (cores_needed < 0 && num_online_cpus() > 1) {
-			for (i = NR_CPUS; i > 0 && cores_needed < 0; i--) {
-				if (cpu_online(i) && cpumask_test_cpu(i, &free_cores)) {
-					cpu_down(i);
-					cores_needed++;
-				}
-			}
-		}
-		mutex_unlock(&dm_hotplug_lock);
-	}
-	
 	cpufreq_cpu_put(policy);
 	return;
 }
 
 static int thread_run_flag;
 
-static int __cpuinit on_run(void *data)
+static int on_run(void *data)
 {
 	int on_cpu = 0;
 	enum hotplug_mode exe_mode;
@@ -393,9 +331,8 @@ static int __cpuinit on_run(void *data)
 			pr_debug("frequency info : %d, %s\n", cur_load_freq
 				, (exe_mode<1)?"NORMAL":((exe_mode<2)?"LOW":"HIGH"));
 #endif
-			dynamic_hotplug(exe_mode);
-			//if (dynamic_hotplug(exe_mode) < 0)
-			//	exe_mode = prev_mode;
+			if (dynamic_hotplug(exe_mode) < 0)
+				exe_mode = prev_mode;
 		}
 
 		prev_mode = exe_mode;
@@ -410,7 +347,7 @@ void dm_cpu_hotplug_exit(void)
 	thread_run_flag = 0;
 }
 
-void __cpuinit dm_cpu_hotplug_init(void)
+void dm_cpu_hotplug_init(void)
 {
 	struct task_struct *k;
 
