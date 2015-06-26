@@ -91,7 +91,7 @@ extern void hlpr_set_gpu_gov_cpu_table(int gpu_table[]);
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 static unsigned int hotplug_enabled_flag = 1;
 static unsigned int hotplug_cpu_up_load_value = 0;
-static unsigned int hotplug_cpu_up_boost_value = 90;
+static unsigned int hotplug_cpu_up_boost_value = 0;
 static unsigned int normalmin_freq_value = 250000;
 static unsigned int hotplug_cpu_down_hysteresis_value = 20;
 #endif
