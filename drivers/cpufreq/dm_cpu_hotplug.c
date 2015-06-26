@@ -55,7 +55,7 @@ extern unsigned int get_hotplug_cpu_up_boost(void);
 extern unsigned int get_normalmin_freq(void);
 extern unsigned int get_hotplug_cpu_down_hysteresis(void);
 
-static unsigned int hotplug_enabled_flag = 0;
+static unsigned int hotplug_enabled_flag = 1;
 static unsigned int hotplug_cpu_up_load_value = 0;
 static unsigned int hotplug_cpu_up_boost_value = 90;
 static unsigned int hotplug_cpu_down_hysteresis_value = 20;
