@@ -1,7 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 4
-SUBLEVEL = 107
+SUBLEVEL = 108
 EXTRAVERSION = 
+NAME = Saber-toothed Squirrel
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
