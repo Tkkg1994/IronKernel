@@ -457,6 +457,11 @@ struct sec_battery_platform_data {
 
 	sec_battery_temp_check_t temp_check_type;
 	unsigned int temp_check_count;
+	
+	unsigned int QRTable00;
+	unsigned int QRTable10;
+	unsigned int QRTable20;
+	unsigned int QRTable30;
 	/*
 	 * limit can be ADC value or Temperature
 	 * depending on temp_check_type

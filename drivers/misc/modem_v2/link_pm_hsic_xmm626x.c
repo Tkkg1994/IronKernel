@@ -595,7 +595,10 @@ static void link_pm_runtime_work(struct work_struct *work)
 	int delay;
 
 	mif_debug("rpm_status(%d)\n", dev->power.runtime_status);
-
+	if (pmdata->usb_ld->ld.mc->phone_state != STATE_ONLINE) {
+		mif_err("modem status is not STATE_ONLINE\n");
+		return;
+	}
 	switch (dev->power.runtime_status) {
 	case RPM_SUSPENDED:
 		if (pmdata->resume_req)
