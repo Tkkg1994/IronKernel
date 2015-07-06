@@ -207,7 +207,8 @@ EXPORT_SYMBOL(local_bh_enable_ip);
  * we want to handle softirqs as soon as possible, but they
  * should not be able to lock up the box.
  */
-#define MAX_SOFTIRQ_TIME  msecs_to_jiffies(2)
+#define MAX_SOFTIRQ_TIME msecs_to_jiffies(2)
+#define MAX_SOFTIRQ_RESTART 10
 
 asmlinkage void __do_softirq(void)
 {
