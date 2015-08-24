@@ -43,6 +43,7 @@
 #include <mach/map.h>
 #include <mach/bts.h>
 #include <mach/regs-mem.h>
+#include <mach/smc.h>
 #include <plat/regs-fb-v4.h>
 #include <plat/fb.h>
 #include <plat/cpu.h>
@@ -137,6 +138,7 @@ extern int s5p_mic_disable(struct s5p_mic *mic);
 #define FHD_MAX_BW_PER_WINDOW  (1080 * 1920 * 4 * 60 * 4)
 #define FHD_MID_BW_PER_WINDOW  (1080 * 1920 * 4 * 60 * 3)
 #define FHD_LOW_BW_PER_WINDOW  (1080 * 1920 * 4 * 60 * 2)
+#define SMC_PROTECTION_SET 0x81000000
 
 #if defined(CONFIG_SUPPORT_WQXGA)	/* For WQXGA */
 #define FIMD_MIF_BUS_MIN    0
@@ -173,6 +175,7 @@ struct s3c_fb;
 extern struct ion_device *ion_exynos;
 #endif
 
+#define DEV_DECON	7
 #ifdef CONFIG_FB_EXYNOS_FIMD_MC
 #define SYSREG_MIXER0_VALID	(1 << 7)
 #define SYSREG_MIXER1_VALID	(1 << 4)
@@ -329,6 +332,7 @@ struct s3c_reg_data {
 	struct s3c_dma_buf_data	dma_buf_data[S3C_FB_MAX_WIN];
 	unsigned int		bandwidth;
 	u32			win_overlap_cnt;
+	bool			protection[S3C_FB_MAX_WIN];
 };
 #endif
 
@@ -517,6 +521,7 @@ struct s3c_fb {
 #endif
 
 	enum s3c_fb_psr_mode psr_mode;
+	bool protected_content;
 };
 
 static u32 s3c_fb_rgborder(int format);
@@ -3021,6 +3026,8 @@ static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 	regs->vidosd_b[win_no] = vidosd_b(win_config->x, win_config->y,
 			win_config->w, win_config->h);
 
+	regs->protection[win_no] = win_config->protection;
+
 	if ((win_config->plane_alpha > 0) && (win_config->plane_alpha < 0xFF)) {
 		alpha0 = win_config->plane_alpha;
 		alpha1 = 0;
@@ -3278,6 +3285,23 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	spin_unlock_irqrestore(&sfb->slock, flags);
 }
 
+static void decon_set_protected_content(struct s3c_fb *sfb, bool enable)
+{
+	int  ret;
+
+	if (sfb->protected_content == enable)
+		return;
+
+	ret = exynos_smc(SMC_PROTECTION_SET, 0, DEV_DECON, enable);
+
+	if (ret)
+		dev_warn(sfb->dev, "decon protection Enable failed. ret(%d)\n", ret);
+	else
+		dev_dbg(sfb->dev, "DRM %s\n", enable ? "enabled" : "disabled");
+
+	sfb->protected_content = enable;
+}
+
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
 {
 	int err = sync_fence_wait(fence, 2000);
@@ -3343,6 +3367,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	bool wait_for_vsync;
 	int count = 10;
 	int i;
+	int protection = 0;
 	pm_runtime_get_sync(sfb->dev);
 #ifdef CONFIG_FB_I80IF
 	if (!s3c_fb_clk_lock(sfb, true))
@@ -3356,10 +3381,11 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
-
+		protection += regs->protection[i];
 		if (regs->dma_buf_data[i].fence)
 			s3c_fd_fence_wait(sfb, regs->dma_buf_data[i].fence);
 	}
+	decon_set_protected_content(sfb, !!protection);
 #if defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 	if (prev_overlap_cnt < regs->win_overlap_cnt)
 		s3c_fb_update_pm_qos(sfb, regs);
