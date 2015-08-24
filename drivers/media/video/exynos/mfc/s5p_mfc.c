@@ -1845,15 +1845,10 @@ static int s5p_mfc_open(struct file *file)
 #endif
 	if (is_drm == MFCDRM_NONE) {
 		if (dev->num_drm_inst) {
-			if (node != MFCNODE_ENCODER) {
-				mfc_err("Can not open non-DRM instance\n");
-				mfc_err("DRM instance is already opened.\n");
-				ret = -EINVAL;
-				goto err_drm_start;
-			} else {
-				mfc_info("Work for getting extra information.\n");
-				ctx->state = MFCINST_ERROR;
-			}
+			mfc_err("Can not open non-DRM instance\n");
+			mfc_err("DRM instance is already opened.\n");
+			ret = -EINVAL;
+			goto err_drm_start;
 		}
 	} else {
 		if (is_drm == MFCDRM_MAGIC_KEY)

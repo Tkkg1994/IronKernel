@@ -45,7 +45,7 @@
 #define MFC_MAX_DPBS		32
 #define MFC_INFO_INIT_FD	-1
 
-#define MFC_NUM_CONTEXTS	32
+#define MFC_NUM_CONTEXTS	16
 #define MFC_MAX_DRM_CTX		2
 /* Interrupt timeout */
 #define MFC_INT_TIMEOUT		2000
@@ -471,7 +471,7 @@ struct s5p_mfc_enc_params {
 	u16 width;
 	u16 height;
 
-	u32 gop_size;
+	u16 gop_size;
 	enum v4l2_mpeg_video_multi_slice_mode slice_mode;
 	u16 slice_mb;
 	u32 slice_bit;
@@ -974,9 +974,6 @@ static inline unsigned int mfc_version(struct s5p_mfc_dev *dev)
 #define FW_HAS_TEMPORAL_SVC_CH(dev)	((IS_MFCv7X(dev) &&			\
 					 (dev->fw.date >= 0x141108)))
 
-#define FW_HAS_GOP2(dev)		(IS_MFCV6(dev) &&                      \
-					(dev->fw.date >= 0x150323))
- 
 #define HW_LOCK_CLEAR_MASK		(0xFFFFFFFF)
 
 #define is_h264(ctx)		((ctx->codec_mode == S5P_FIMV_CODEC_H264_DEC) ||\

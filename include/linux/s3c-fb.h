@@ -80,7 +80,6 @@ struct s3c_fb_win_config {
 	int	y;
 	__u32	w;
 	__u32	h;
-	bool	protection;
 };
 
 /* S3C_FB_MAX_WIN

@@ -8586,7 +8586,7 @@ static s32 wl_update_bss_info(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 #endif /* ROAM_CHANNEL_CACHE */
 
 	wiphy = bcmcfg_to_wiphy(cfg);
-	if( wiphy == NULL ) printf("%s: wiphy is NULL\n",__FUNCTION__);
+
 	ssid = (struct wlc_ssid *)wl_read_prof(cfg, ndev, WL_PROF_SSID);
 	curbssid = wl_read_prof(cfg, ndev, WL_PROF_BSSID);
 	bss = cfg80211_get_bss(wiphy, NULL, curbssid,
@@ -8604,7 +8604,7 @@ static s32 wl_update_bss_info(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 	}
 	bi = (struct wl_bss_info *)(cfg->extra_buf + 4);
 	channel = bi->ctl_ch ? bi->ctl_ch :
-		wf_chspec_ctlchan(wl_chspec_driver_to_host(bi->chanspec));
+		CHSPEC_CHANNEL(wl_chspec_driver_to_host(bi->chanspec));
 	wl_update_prof(cfg, ndev, NULL, &channel, WL_PROF_CHAN);
 
 	if (!bss) {
@@ -8630,12 +8630,7 @@ static s32 wl_update_bss_info(struct bcm_cfg80211 *cfg, struct net_device *ndev,
 		band = (channel <= CH_MAX_2G_CHANNEL) ? IEEE80211_BAND_2GHZ : IEEE80211_BAND_5GHZ;
 		freq = ieee80211_channel_to_frequency(channel, band);
 #endif
-		printf("%s: ctrl ch %d, freq %d\n",__FUNCTION__,channel,freq);
 		cur_channel = ieee80211_get_channel(wiphy, freq);
-		if (unlikely(cur_channel)) {
-			WL_ERR(("ieee80211_get_channel error\n"));
-			goto update_bss_info_out;
-			}
 		bss->channel = cur_channel;
 #endif /* ROAM_CHANNEL_CACHE */
 #if defined(WL_CFG80211_P2P_DEV_IF)
