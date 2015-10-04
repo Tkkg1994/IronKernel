@@ -2,5 +2,5 @@
 {
 	make mrproper
 	make klimtwifi_00_defconfig
-        make -j3
+        make -j5
 }
