@@ -92,7 +92,7 @@ int logger_mode_init(void)
 	}
 
 	// initialize logger mode to 0 (disabled) as default
-	logger_mode = 0;
+	logger_mode = 1;
 
         return (logger_mode_retval);
 }
