@@ -113,7 +113,7 @@ void unlock_policy_rwsem_##mode(int cpu)				\
 	BUG_ON(policy_cpu == -1);					\
 	up_##mode(&per_cpu(cpu_policy_rwsem, policy_cpu));		\
 }
- 
+
 unlock_policy_rwsem(read, cpu);
 unlock_policy_rwsem(write, cpu);
 
@@ -348,7 +348,6 @@ void cpufreq_notify_utilization(struct cpufreq_policy *policy,
 		sysfs_notify(&policy->kobj, NULL, "cpu_utilization");
 
 }
-
 
 /*********************************************************************
  *                          SYSFS INTERFACE                          *
