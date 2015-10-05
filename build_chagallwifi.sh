@@ -1,6 +1,6 @@
 #!/bin/bash
 {
 	make mrproper
-	make chagallwifi_00_defconfig
+	make IronKernel_T800_defconfig
         make -j5
 }
