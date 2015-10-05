@@ -1,6 +1,6 @@
 #!/bin/bash
 {
 	make mrproper
-	make klimtwifi_00_defconfig
+	make IronKernel_T700_defconfig
         make -j5
 }
