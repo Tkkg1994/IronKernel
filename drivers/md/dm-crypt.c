@@ -1202,9 +1202,9 @@ static void kcryptd_async_done(struct crypto_async_request *async_req,
 		kcryptd_crypt_read_done(io);
 	else
 		kcryptd_crypt_write_io_submit(io, 1);
-+done:
-+	if (!completion_done(&ctx->restart))
-+		complete(&ctx->restart);
+done:
+	if (!completion_done(&ctx->restart))
+		complete(&ctx->restart);
 }
 
 static void kcryptd_crypt(struct work_struct *work)

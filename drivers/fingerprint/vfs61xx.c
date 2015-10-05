@@ -312,7 +312,7 @@ static inline ssize_t vfsspi_writeSync(struct vfsspi_devData *vfsSpiDev,
 #define SPI_TRANS_ARRAY (10)
 
 /* Return no.of bytes read >0. negative integer incase of error. */
-inline ssize_t vfsspi_readSync(struct vfsspi_devData *vfsSpiDev,
+static inline ssize_t vfsspi_readSync(struct vfsspi_devData *vfsSpiDev,
 	unsigned char *buf, size_t len)
 {
 	int status = 0;
@@ -367,7 +367,7 @@ overflow:
 	return status;
 }
 #else
-inline ssize_t vfsspi_readSync(struct vfsspi_devData *vfsSpiDev,
+static inline ssize_t vfsspi_readSync(struct vfsspi_devData *vfsSpiDev,
 	unsigned char *buf, size_t len)
 {
 	int status = 0;
