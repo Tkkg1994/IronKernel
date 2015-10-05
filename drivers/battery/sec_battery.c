@@ -1557,7 +1557,11 @@ static void sec_bat_get_battery_info(
 				struct sec_battery_info *battery)
 {
 	union power_supply_propval value;
-
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+	static struct timespec old_ts;
+	struct timespec c_ts;
+	c_ts = ktime_to_timespec(ktime_get_boottime());
+#endif
 	psy_do_property("sec-fuelgauge", get,
 		POWER_SUPPLY_PROP_VOLTAGE_NOW, value);
 	battery->voltage_now = value.intval;
@@ -1614,13 +1618,21 @@ static void sec_bat_get_battery_info(
 		else
 			battery->capacity = value.intval;
 	}
-#elif defined(CONFIG_V1A) || defined(CONFIG_V2A)
+#elif defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 	/* if the battery status was full, and SOC wasn't 100% yet,
 		then ignore FG SOC, and report (previous SOC +1)% */
 	if (battery->status != POWER_SUPPLY_STATUS_FULL)
 		battery->capacity = value.intval;
-	else if (battery->capacity != 100)
+#if defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
+	else if ((battery->capacity != 100) && ((c_ts.tv_sec - old_ts.tv_sec) >= 30)){
+		old_ts = c_ts;
+#else
+	else if (battery->capacity != 100){
+#endif
 		battery->capacity++;
+		pr_info("%s : forced full-charged sequence for the capacity(%d)\n",
+			__func__, battery->capacity);
+	}
 #else
 	battery->capacity = value.intval;
 #endif
@@ -2858,7 +2870,7 @@ static int sec_bat_get_property(struct power_supply *psy,
 						return 0;
 					}
 			}
-#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 			if (battery->status == POWER_SUPPLY_STATUS_FULL &&
 				battery->capacity != 100) {
 				val->intval = POWER_SUPPLY_STATUS_CHARGING;
@@ -2927,7 +2939,7 @@ static int sec_bat_get_property(struct power_supply *psy,
 		val->intval = battery->charging_mode;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
+#if defined(CONFIG_V1A) || defined(CONFIG_V2A) || defined(CONFIG_KLIMT) || defined(CONFIG_CHAGALL)
 		val->intval = battery->capacity;
 #else
 		/* In full-charged status, SOC is always 100% */

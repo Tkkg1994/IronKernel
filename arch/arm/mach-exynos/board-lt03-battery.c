@@ -737,6 +737,18 @@ sec_battery_platform_data_t sec_battery_pdata = {
 	.temp_check_type = SEC_BATTERY_TEMP_CHECK_TEMP,
 	.temp_check_count = 1,
 
+#if defined(CONFIG_KLIMT)
+	.QRTable00 = 0x7B00,
+	.QRTable10 = 0x3700,
+	.QRTable20 = 0x1402,
+	.QRTable30 = 0x0F84,
+#elif defined(CONFIG_CHAGALL)
+	.QRTable00 = 0x8000,
+	.QRTable10 = 0x3700,
+	.QRTable20 = 0x0E08,
+	.QRTable30 = 0x098A,
+#endif
+
 #if defined(CONFIG_N2A)
 #if defined(CONFIG_TARGET_LOCALE_USA)
 	.temp_high_threshold_event = 510,
@@ -936,7 +948,11 @@ sec_battery_platform_data_t sec_battery_pdata = {
 		SEC_FUELGAUGE_CAPACITY_TYPE_SCALE |
 		SEC_FUELGAUGE_CAPACITY_TYPE_DYNAMIC_SCALE,
 		/* SEC_FUELGAUGE_CAPACITY_TYPE_ATOMIC, */
+#if defined(CONFIG_KLIMT)
+	.capacity_max = 990,
+#else
 	.capacity_max = 1000,
+#endif
 	.capacity_max_margin = 50,
 	.capacity_min = 0,
 
