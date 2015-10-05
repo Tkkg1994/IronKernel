@@ -27,7 +27,7 @@ static ssize_t logger_mode_show(struct kobject *kobj, struct kobj_attribute *att
 {
 
 	// print current mode
-	if (logger_mode == 0)
+	if (logger_mode == 1)
 	{
 		return sprintf(buf, "logger mode: %d (disabled)", logger_mode);
 	}
