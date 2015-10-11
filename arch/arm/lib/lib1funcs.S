@@ -344,7 +344,7 @@ UNWIND(.save {r0, r1, ip, lr}	)
 	ldmfd	sp!, {r1, r2, ip, lr}
 	mul	r3, r0, r2
 	sub	r1, r1, r3
-	mov	pc, lr
+	ret	lr
 
 UNWIND(.fnend)
 ENDPROC(__aeabi_idivmod)
