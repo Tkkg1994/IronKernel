@@ -710,7 +710,7 @@ can_read_key:
 		down_read(&key->sem);
 		ret = key_validate(key);
 		if (ret == 0)
- 			ret = key->type->read(key, buffer, buflen);
+			ret = key->type->read(key, buffer, buflen);
 		up_read(&key->sem);
 	}
 
@@ -1625,4 +1625,4 @@ SYSCALL_DEFINE5(keyctl, int, option, unsigned long, arg2, unsigned long, arg3,
 	default:
 		return -EOPNOTSUPP;
 	}
-}
+} 			
