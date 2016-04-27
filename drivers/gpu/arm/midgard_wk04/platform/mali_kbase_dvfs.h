@@ -27,17 +27,8 @@
 #define MALI_DVFS_CURRENT_FREQ 0
 
 #if SOC_NAME == 5420
-<<<<<<< HEAD
 #define MALI_DVFS_START_FREQ 100
 #define MALI_DVFS_BL_CONFIG_FREQ 733
-=======
-#if defined(CONFIG_SUPPORT_WQXGA)
-#define MALI_DVFS_START_FREQ 266
-#else
-#define MALI_DVFS_START_FREQ 177
-#endif
-#define MALI_DVFS_BL_CONFIG_FREQ 350
->>>>>>> 4d9e005... T805XXU1BOL1
 #define IS_ASV_ENABLED
 #elif SOC_NAME == 5260
 #define MALI_DVFS_START_FREQ 350
@@ -47,11 +38,7 @@
 #endif
 #else
 #define MALI_DVFS_START_FREQ 450
-<<<<<<< HEAD
 #define MALI_DVFS_BL_CONFIG_FREQ 733
-=======
-#define MALI_DVFS_BL_CONFIG_FREQ 533
->>>>>>> 4d9e005... T805XXU1BOL1
 #endif
 
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -134,3 +121,4 @@ ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, ch
 ssize_t set_time_in_state(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
 
 #endif /* _KBASE_DVFS_H_ */
+
