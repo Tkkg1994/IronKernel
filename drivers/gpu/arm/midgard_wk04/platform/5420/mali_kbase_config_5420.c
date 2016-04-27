@@ -60,14 +60,24 @@ static int mali_pm_notifier(struct notifier_block *nb, unsigned long event, void
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
 #ifdef CONFIG_MALI_T6XX_DVFS
+<<<<<<< HEAD
 //		if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)
 //			err = NOTIFY_BAD;
+=======
+		if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)
+			err = NOTIFY_BAD;
+>>>>>>> 4d9e005... T805XXU1BOL1
 #endif
 		break;
 	case PM_POST_SUSPEND:
 #ifdef CONFIG_MALI_T6XX_DVFS
+<<<<<<< HEAD
 //		if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
 //			err = NOTIFY_BAD;
+=======
+		if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
+			err = NOTIFY_BAD;
+>>>>>>> 4d9e005... T805XXU1BOL1
 #endif
 		break;
 	default:
@@ -169,8 +179,13 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 
 	kbase_platform_clock_on(kbdev);
 #ifdef CONFIG_MALI_T6XX_DVFS
+<<<<<<< HEAD
 //	if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
 //		return -EPERM;
+=======
+	if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
+		return -EPERM;
+>>>>>>> 4d9e005... T805XXU1BOL1
 #endif
 	mout_vpll = clk_get(dev, "mout_vpll");
 	if (IS_ERR(mout_vpll)) {
@@ -211,8 +226,13 @@ static void pm_callback_runtime_off(kbase_device *kbdev)
 {
 	kbase_platform_clock_off(kbdev);
 #ifdef CONFIG_MALI_T6XX_DVFS
+<<<<<<< HEAD
 //	if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)
 //		printk("[err] disabling dvfs is faled\n");
+=======
+	if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)
+		printk("[err] disabling dvfs is faled\n");
+>>>>>>> 4d9e005... T805XXU1BOL1
 #endif
 }
 
@@ -250,7 +270,11 @@ static kbase_attribute config_attributes[] = {
 	},
 	{
 		KBASE_CONFIG_ATTR_GPU_FREQ_KHZ_MAX,
+<<<<<<< HEAD
 		733000
+=======
+		533000
+>>>>>>> 4d9e005... T805XXU1BOL1
 	},
 
 	{

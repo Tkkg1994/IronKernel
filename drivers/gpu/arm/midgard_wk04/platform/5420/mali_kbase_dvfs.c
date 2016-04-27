@@ -36,7 +36,10 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/pm_qos.h>
+<<<<<<< HEAD
 #include <linux/sysfs_helpers.h>
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 
 #include <mach/bts.h>
 #include <mach/map.h>
@@ -72,6 +75,7 @@
 #endif
 
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+<<<<<<< HEAD
 #define GPU_MAX_CLK 733
 #endif
 #if defined(CONFIG_EXYNOS_THERMAL)
@@ -81,6 +85,17 @@
 #define GPU_THROTTLING_100_105 480
 #define GPU_THROTTLING_105_110 266
 #define GPU_TRIPPING_110 177
+=======
+#define GPU_MAX_CLK 480
+#endif
+#if defined(CONFIG_EXYNOS_THERMAL)
+#include <mach/tmu.h>
+#define GPU_THROTTLING_90_95 480
+#define GPU_THROTTLING_95_100 420
+#define GPU_THROTTLING_100_105 350
+#define GPU_THROTTLING_105_110 177
+#define GPU_TRIPPING_110 100
+>>>>>>> 4d9e005... T805XXU1BOL1
 #endif
 
 #define COLD_MINIMUM_VOL 950000
@@ -129,6 +144,7 @@ typedef struct _mali_dvfs_info{
 
 static mali_dvfs_info mali_dvfs_infotbl[] = {
 #if !defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+<<<<<<< HEAD
 	{812500, 100, 0, 40, 0, 133000, 83000, 250000},
 	{812500, 177, 42, 50, 0, 133000, 83000, 250000},
 	{862500, 266, 52, 60, 0, 400000, 222000, 250000},
@@ -160,6 +176,34 @@ unsigned int dvfs_step_max_minus1 = 533;
 unsigned int cur_gpu_freq = 0;
 
 
+=======
+#ifndef CONFIG_SUPPORT_WQXGA
+	{812500, 100, 0, 90, 0, 160000, 83000, 250000},
+	{812500, 177, 53, 90, 0, 160000, 83000, 250000},
+#else
+	{812500, 177, 0, 90, 0, 160000, 83000, 250000},
+#endif /* CONFIG_SUPPORT_WQXGA */
+	{862500, 266, 60, 90, 0, 400000, 222000, 250000},
+	{912500, 350, 70, 90, 0, 667000, 333000, 250000},
+	{962500, 420, 78, 99, 0, 800000, 400000, 250000},
+	{1000000, 480, 98, 100, 0, 800000, 400000, 650000},
+	{1037500, 533, 99, 100, 0, 800000, 400000, 1200000},
+#else
+#ifndef CONFIG_SUPPORT_WQXGA
+	{812500, 100, 0, 90, 0, 160000, 83000, 0, 500000},
+	{812500, 177, 53, 90, 0, 160000, 83000, 0, 500000},
+#else
+	{812500, 177, 0, 90, 0, 160000, 83000, 0, 500000},
+#endif /* CONFIG_SUPPORT_WQXGA */
+	{862500, 266, 60, 90, 0, 400000, 222000, 0, 500000},
+	{912500, 350, 70, 90, 0, 667000, 333000, 0, 500000},
+	{962500, 420, 78, 99, 0, 800000, 400000, 0, 500000},
+	{1000000, 480, 98, 100, 0, 800000, 400000, 0, 1300000},
+	{1037500, 533, 99, 100, 0, 800000, 400000, 1200000, 1300000},
+#endif
+};
+
+>>>>>>> 4d9e005... T805XXU1BOL1
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
 
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -189,6 +233,7 @@ static void update_time_in_state(int level);
 /*dvfs status*/
 static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
+<<<<<<< HEAD
 static const unsigned int mali_dvfs_vol_default[] = { 812500, 812500, 862500, 912500, 962500, 1000000, 1037500, 1050000, 1075000, 1100000};
 
 ssize_t hlpr_get_gpu_volt_table(char *buf)
@@ -344,6 +389,10 @@ void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 	
 	hlpr_set_gpu_gov_table(gov_table[dvfs_step_max - dvfs_step_min - 1]);
 }
+=======
+static const unsigned int mali_dvfs_vol_default[] = { 812500, 812500, 862500, 912500, 962500, 1000000, 1037500};
+
+>>>>>>> 4d9e005... T805XXU1BOL1
 
 static int mali_dvfs_update_asv(int cmd)
 {
@@ -401,7 +450,11 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 
 	if (dvfs_status->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 #ifdef PLATFORM_UTILIZATION
+<<<<<<< HEAD
 		if (dvfs_status->step == kbase_platform_dvfs_get_level(dvfs_step_max_minus1)) {
+=======
+		if (dvfs_status->step == kbase_platform_dvfs_get_level(500)) {
+>>>>>>> 4d9e005... T805XXU1BOL1
 			if (platform->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 				dvfs_status->step++;
 				DVFS_ASSERT(dvfs_status->step < MALI_DVFS_STEP);
@@ -456,11 +509,14 @@ static void mali_dvfs_event_proc(struct work_struct *w)
 
 	mali_dvfs_decide_next_level(dvfs_status);
 
+<<<<<<< HEAD
 	if (dvfs_status->step >= dvfs_step_max)
 		dvfs_status->step = dvfs_step_max-1;
 	if (dvfs_status->step < dvfs_step_min)
 		dvfs_status->step = dvfs_step_min;
 
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 	kbase_platform_dvfs_set_level(dvfs_status->kbdev, dvfs_status->step);
 
 	mutex_unlock(&mali_enable_clock_lock);
@@ -558,14 +614,20 @@ int kbase_platform_dvfs_enable(bool enable, int freq)
 		dvfs_status->step = kbase_platform_dvfs_get_level(freq);
 		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+<<<<<<< HEAD
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 		if (freq == MALI_DVFS_START_FREQ) {
 			if (dvfs_status->min_lock != -1)
 				dvfs_status->step = MAX(dvfs_status->min_lock, dvfs_status->step);
 			if (dvfs_status->max_lock != -1)
 				dvfs_status->step = MIN(dvfs_status->max_lock, dvfs_status->step);
 		}
+<<<<<<< HEAD
 #endif
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 
 		kbase_platform_dvfs_set_level(dvfs_status->kbdev, dvfs_status->step);
 	}
@@ -644,7 +706,11 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
 	mali_dvfs_status_current.kbdev = kbdev;
 	mali_dvfs_status_current.utilisation = 100;
+<<<<<<< HEAD
 	mali_dvfs_status_current.step = dvfs_step_max-1;
+=======
+	mali_dvfs_status_current.step = MALI_DVFS_STEP-1;
+>>>>>>> 4d9e005... T805XXU1BOL1
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	mali_dvfs_status_current.max_lock = -1;
 	mali_dvfs_status_current.min_lock = -1;
@@ -658,8 +724,11 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+<<<<<<< HEAD
 	hlpr_set_min_max_G3D(MALI_DVFS_START_FREQ, MALI_DVFS_BL_CONFIG_FREQ);
 
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 	return MALI_TRUE;
 }
 
@@ -1231,6 +1300,7 @@ int kbase_platform_dvfs_get_level(int freq)
 	int i;
 	for (i = 0; i < MALI_DVFS_STEP; i++) {
 		if (mali_dvfs_infotbl[i].clock == freq)
+<<<<<<< HEAD
 		{
 			if (i >= dvfs_step_max)
 				return dvfs_step_max-1;
@@ -1239,16 +1309,22 @@ int kbase_platform_dvfs_get_level(int freq)
 			else
 				return i;
 		}
+=======
+		return i;
+>>>>>>> 4d9e005... T805XXU1BOL1
 	}
 
 	return -1;
 }
 
+<<<<<<< HEAD
 unsigned int get_cur_gpu_freq(void)
 {
 	return cur_gpu_freq;
 }
 
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 {
 	static int prev_level = -1;
@@ -1263,6 +1339,7 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 	if (level == prev_level)
 		return;
 
+<<<<<<< HEAD
 	if (level >= dvfs_step_max)
 		level = dvfs_step_max-1;
 	if (level < dvfs_step_min)
@@ -1270,6 +1347,8 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 
 	cur_gpu_freq = mali_dvfs_infotbl[level].clock;
 
+=======
+>>>>>>> 4d9e005... T805XXU1BOL1
 	if (WARN_ON((level >= MALI_DVFS_STEP) || (level < 0)))
 		panic("invalid level");
 

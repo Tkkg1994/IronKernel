@@ -45,6 +45,8 @@
 #define SELFTEST_LIMITATION_OF_ERROR       5250
 
 #define BMG160_DEFAULT_DELAY               200000000LL
+#define BMG160_MIN_DELAY                   5000000LL
+
 #define	BMG160_CHIP_ID                     0x0F
 
 struct bmg160_v {
@@ -75,6 +77,8 @@ struct bmg160_p {
 	int gyro_dps;
 	int gyro_int;
 	int gyro_drdy;
+
+	u64 old_timestamp;
 };
 
 static int bmg160_open_calibration(struct bmg160_p *);
@@ -440,15 +444,40 @@ static void bmg160_work_func(struct work_struct *work)
 	struct bmg160_p *data = container_of(work, struct bmg160_p, work);
 	struct timespec ts;
 	int time_hi, time_lo;
+	u64 delay = ktime_to_ns(data->poll_delay);
 
 	ts = ktime_to_timespec(ktime_get_boottime());
 	data->timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-	time_lo = (int)(data->timestamp & TIME_LO_MASK);
-	time_hi = (int)((data->timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
+    //time_lo = (int)(data->timestamp & TIME_LO_MASK);
+    //time_hi = (int)((data->timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
 
 	ret = bmg160_read_gyro_xyz(data, &gyro);
 	if (ret < 0)
 		return;
+
+	if (data->old_timestamp != 0 &&
+	   ((data->timestamp - data->old_timestamp) > ktime_to_ms(data->poll_delay) * 1800000LL)) {
+
+		u64 shift_timestamp = delay >> 1;
+		u64 timestamp = 0ULL;
+		u64 diff = 0ULL;
+
+		for (timestamp = data->old_timestamp + delay; timestamp < data->timestamp - shift_timestamp; timestamp+=delay) {
+				time_hi = (int)((timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
+				time_lo = (int)(timestamp & TIME_LO_MASK);
+
+				input_report_rel(data->input, REL_RX, gyro.x - data->caldata.x);
+				input_report_rel(data->input, REL_RY, gyro.y - data->caldata.y);
+				input_report_rel(data->input, REL_RZ, gyro.z - data->caldata.z);
+				input_report_rel(data->input, REL_X, time_hi);
+				input_report_rel(data->input, REL_Y, time_lo);
+				input_sync(data->input);
+				data->gyrodata = gyro;
+		}
+	}
+
+	time_hi = (int)((data->timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
+	time_lo = (int)(data->timestamp & TIME_LO_MASK);
 
 	input_report_rel(data->input, REL_RX, gyro.x - data->caldata.x);
 	input_report_rel(data->input, REL_RY, gyro.y - data->caldata.y);
@@ -457,6 +486,7 @@ static void bmg160_work_func(struct work_struct *work)
 	input_report_rel(data->input, REL_Y, time_lo);
 	input_sync(data->input);
 	data->gyrodata = gyro;
+	data->old_timestamp = data->timestamp;
 }
 
 static void bmg160_set_enable(struct bmg160_p *data, int enable)
@@ -496,8 +526,10 @@ static ssize_t bmg160_enable_store(struct device *dev,
 
 	if (enable) {
 		if (pre_enable == OFF) {
+			data->old_timestamp = 0LL;
 			bmg160_open_calibration(data);
 			bmg160_set_mode(data, BMG160_MODE_NORMAL);
+			usleep_range(30000, 31000);
 			atomic_set(&data->enable, ON);
 			bmg160_set_enable(data, ON);
 		}
@@ -535,6 +567,11 @@ static ssize_t bmg160_delay_store(struct device *dev,
 	} else if (ktime_to_ns(data->poll_delay) == delay) {
 		goto exit;
 	}
+
+	if(delay > BMG160_DEFAULT_DELAY)
+		delay = BMG160_DEFAULT_DELAY;
+	else if(delay < BMG160_MIN_DELAY)
+		delay = BMG160_MIN_DELAY;
 
 	if (delay <= 5000000LL)
 		bmg160_set_bw(data, BMG160_BW_116Hz);

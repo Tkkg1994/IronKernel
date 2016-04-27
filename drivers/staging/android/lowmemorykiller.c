@@ -151,6 +151,10 @@ static struct task_struct *pick_next_from_adj_tree(struct task_struct *task);
 static struct task_struct *pick_first_task(void);
 static struct task_struct *pick_last_task(void);
 #endif
+#if defined(CONFIG_ZSWAP)
+extern atomic_t zswap_pool_pages;
+extern atomic_t zswap_stored_pages;
+#endif
 
 static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 {
@@ -166,6 +170,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	int array_size = ARRAY_SIZE(lowmem_adj);
 	int other_free;
 	int other_file;
+	struct reclaim_state *reclaim_state;
 #ifdef CONFIG_SEC_DEBUG_LMK_MEMINFO
 	static DEFINE_RATELIMIT_STATE(lmk_rs, DEFAULT_RATELIMIT_INTERVAL, 1);
 #endif
@@ -177,6 +182,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 	other_free = global_page_state(NR_FREE_PAGES);
 	other_file = global_page_state(NR_FILE_PAGES) -
 						global_page_state(NR_SHMEM);
+	reclaim_state = current->reclaim_state;
 #if defined(CONFIG_ZSWAP)
 	other_file -= total_swapcache_pages;
 #endif
@@ -258,6 +264,14 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		continue;
 	}
 		tasksize = get_mm_rss(p->mm);
+#if defined(CONFIG_ZSWAP)
+		if (atomic_read(&zswap_stored_pages)) {
+			lowmem_print(3, "shown tasksize : %d\n", tasksize);
+			tasksize += atomic_read(&zswap_pool_pages) * get_mm_counter(p->mm, MM_SWAPENTS)
+				/ atomic_read(&zswap_stored_pages);
+			lowmem_print(3, "real tasksize : %d\n", tasksize);
+		}
+#endif
 		task_unlock(p);
 		if (tasksize <= 0)
 			continue;
@@ -306,8 +320,11 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 #endif
 		/* give the system time to free up the memory */
 		msleep_interruptible(20);
+
+		if(reclaim_state)
+			reclaim_state->reclaimed_slab += selected_tasksize;
 	} else
-	rcu_read_unlock();
+		rcu_read_unlock();
 
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
 		     sc->nr_to_scan, sc->gfp_mask, rem);
