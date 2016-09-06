@@ -1463,6 +1463,8 @@ bandwidth_change:
 		complete(&xhci->devs[slot_id]->cmd_completion);
 		break;
 	case TRB_TYPE(TRB_ADDR_DEV):
+		if(xhci->devs[slot_id]== NULL)
+		return;
 		xhci->devs[slot_id]->cmd_status = GET_COMP_CODE(le32_to_cpu(event->status));
 		complete(&xhci->addr_dev);
 		break;

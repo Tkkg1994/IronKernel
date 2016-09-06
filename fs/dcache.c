@@ -2508,14 +2508,24 @@ static int prepend_path(const struct path *path,
 	struct dentry *dentry = path->dentry;
 	struct vfsmount *vfsmnt = path->mnt;
 	struct mount *mnt = real_mount(vfsmnt);
+	char *orig_buffer = *buffer;
+	int orig_len = *buflen;
 	bool slash = false;
 	int error = 0;
 
-	br_read_lock(vfsmount_lock);
+	br_read_lock(&vfsmount_lock);
 	while (dentry != root->dentry || vfsmnt != root->mnt) {
 		struct dentry * parent;
 
 		if (dentry == vfsmnt->mnt_root || IS_ROOT(dentry)) {
+			/* Escaped? */
+			if (dentry != vfsmnt->mnt_root) {
+				*buffer = orig_buffer;
+				*buflen = orig_len;
+				slash = false;
+				error = 3;
+				goto global_root;
+			}
 			/* Global root? */
 			if (!mnt_has_parent(mnt))
 				goto global_root;
@@ -2542,7 +2552,7 @@ static int prepend_path(const struct path *path,
 		error = prepend(buffer, buflen, "/", 1);
 
 out:
-	br_read_unlock(vfsmount_lock);
+	br_read_unlock(&vfsmount_lock);
 	return error;
 
 global_root:
@@ -2558,7 +2568,7 @@ global_root:
 	if (!slash)
 		error = prepend(buffer, buflen, "/", 1);
 	if (!error)
-		error = real_mount(vfsmnt)->mnt_ns ? 1 : 2;
+		error = is_mounted(vfsmnt) ? 1 : 2;
 	goto out;
 }
 

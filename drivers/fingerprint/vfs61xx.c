@@ -634,12 +634,13 @@ static int sec_spi_prepare(struct sec_spi_info *spi_info, struct spi_device *spi
 	if (!sdd)
 		return -EFAULT;
 
-	pm_runtime_get_sync(&sdd->pdev->dev);
+	clk_prepare_enable(sdd->clk);
+	clk_prepare_enable(sdd->src_clk);
 
-	// set spi clock rate 
+	/* set spi clock rate */
 	clk_set_rate(sdd->src_clk, spi_info->speed * 2);
 
-	// enable chip select 
+	/* enable chip select */
 	cs = spi->controller_data;
 
 	if(cs->line != (unsigned)NULL)
@@ -657,12 +658,14 @@ static int sec_spi_unprepare(struct sec_spi_info *spi_info, struct spi_device *s
 	if (!sdd)
 		return -EFAULT;
 
-	// disable chip select
+	/* disable chip select */
 	cs = spi->controller_data;
 	if(cs->line != (unsigned)NULL)
 		gpio_set_value(cs->line, 1);
 
-	pm_runtime_put(&sdd->pdev->dev);
+	clk_disable_unprepare(sdd->clk);
+	clk_disable_unprepare(sdd->src_clk);
+
 
 	return 0;
 }
@@ -1465,11 +1468,29 @@ static ssize_t vfsspi_ocp_check_store(struct device *dev,
 	return size;
 }
 
+static ssize_t vfsspi_vendor_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%s\n", VENDOR);
+}
+
+static ssize_t vfsspi_name_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%s\n", CHIP_ID);
+}
+
 static DEVICE_ATTR(ocp_check, S_IRUGO | S_IWUSR | S_IWGRP,
 	vfsspi_ocp_check_show, vfsspi_ocp_check_store);
+static DEVICE_ATTR(vendor, S_IRUGO,
+	vfsspi_vendor_show, NULL);
+static DEVICE_ATTR(name, S_IRUGO,
+	vfsspi_name_show, NULL);
 
 static struct device_attribute *fp_attrs[] = {
 	&dev_attr_ocp_check,
+	&dev_attr_vendor,
+	&dev_attr_name,
 	NULL,
 };
 #endif

@@ -576,7 +576,9 @@ struct sk_buff *nf_ct_frag6_gather(struct sk_buff *skb, u32 user)
 	if (fq->q.last_in == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
 	    fq->q.meat == fq->q.len) {
 		ret_skb = nf_ct_frag6_reasm(fq, dev);
-		if (ret_skb == NULL)
+		if (ret_skb != NULL)
+			ret_skb->dev = dev;
+		else
 			pr_debug("Can't reassemble fragmented packets\n");
 	}
 	spin_unlock_bh(&fq->q.lock);
@@ -602,9 +604,10 @@ void nf_ct_frag6_output(unsigned int hooknum, struct sk_buff *skb,
 
 		s2 = s->next;
 		s->next = NULL;
+		s->dev = in;
 
 		NF_HOOK_THRESH(NFPROTO_IPV6, hooknum, s, in, out, okfn,
-			       NF_IP6_PRI_CONNTRACK_DEFRAG + 1);
+					   NF_IP6_PRI_CONNTRACK_DEFRAG + 1);
 		s = s2;
 	}
 	nf_conntrack_put_reasm(skb);

@@ -46,9 +46,9 @@
 * statistics
 **********************************/
 /* Number of memory pages used by the compressed pool */
-static atomic_t zswap_pool_pages = ATOMIC_INIT(0);
+atomic_t zswap_pool_pages = ATOMIC_INIT(0);
 /* The number of compressed pages currently stored in zswap */
-static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+atomic_t zswap_stored_pages = ATOMIC_INIT(0);
 
 #ifdef CONFIG_ZSWAP_ENABLE_WRITEBACK
 /* The number of outstanding pages awaiting writeback */
@@ -84,7 +84,7 @@ static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
 module_param_named(compressor, zswap_compressor, charp, 0);
 
 /* The maximum percentage of memory that the compressed pool can occupy */
-static unsigned int zswap_max_pool_percent = 20;
+static unsigned int zswap_max_pool_percent = 50;
 module_param_named(max_pool_percent,
 			zswap_max_pool_percent, uint, 0644);
 
@@ -784,6 +784,12 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
 
 	if (!tree) {
 		ret = -ENODEV;
+		goto reject;
+	}
+
+	/* if this page got EIO on pageout before, give up immediately */
+	if (PageError(page)) {
+		ret = -ENOMEM;
 		goto reject;
 	}
 

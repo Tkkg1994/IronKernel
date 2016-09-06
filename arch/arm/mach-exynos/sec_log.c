@@ -261,11 +261,10 @@ void sec_debug_avc_log(char *fmt, ...)
 	/* Overflow buffer size */
 
 	if (idx + size > sec_avc_log_size - 1) {
-		len = scnprintf(&sec_avc_log_buf[0],
-						size + 1, "%s", buf);
+		len = scnprintf(&sec_avc_log_buf[0], size + 1, "%s\n", buf);
 		*sec_avc_log_ptr = len;
 	} else {
-		len = scnprintf(&sec_avc_log_buf[idx], size + 1, "%s", buf);
+		len = scnprintf(&sec_avc_log_buf[idx], size + 1, "%s\n", buf);
 		*sec_avc_log_ptr += len;
 	}
 }
@@ -300,7 +299,7 @@ static ssize_t sec_avc_log_write(struct file *file,
 	if (sscanf(page, "%u", &new_value) != 1) {
 		pr_info("%s\n", page);
 		/* print avc_log to sec_avc_log_buf */
-		sec_debug_avc_log(page);
+		sec_debug_avc_log("%s", page);
 	} 
 	ret = count;
 out:

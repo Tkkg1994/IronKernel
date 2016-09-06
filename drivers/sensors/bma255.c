@@ -40,7 +40,7 @@
 #define MODEL_NAME                      "BMA255"
 #define MODULE_NAME                     "accelerometer_sensor"
 
-#define CALIBRATION_FILE_PATH           "/efs/accel_calibration_data"
+#define CALIBRATION_FILE_PATH           "/efs/FactoryApp/accel_calibration_data"
 #define CALIBRATION_DATA_AMOUNT         20
 #define MAX_ACCEL_1G			1024
 
@@ -94,7 +94,7 @@ struct bma255_p {
 	int irq_state;
 	int acc_int1;
 	int time_count;
-	u64 timestamp;
+	u64 old_timestamp;
 };
 
 static int bma255_open_calibration(struct bma255_p *);
@@ -322,33 +322,55 @@ static void bma255_work_func(struct work_struct *work)
 	struct bma255_p *data = container_of(work, struct bma255_p, work);
 	struct timespec ts;
 	int time_hi, time_lo;
+	u64 timestamp_new, delay;
 
 	ts = ktime_to_timespec(ktime_get_boottime());
-	data->timestamp = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
-	time_lo = (int)(data->timestamp & TIME_LO_MASK);
-	time_hi = (int)((data->timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
+	timestamp_new = ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+	delay = ktime_to_ns(data->poll_delay);
 
 	ret = bma255_read_accel_xyz(data, &acc);
 	if (ret < 0)
 		goto exit;
 
-	data->accdata.x = acc.x - data->caldata.x;
-	data->accdata.y = acc.y - data->caldata.y;
-	data->accdata.z = acc.z - data->caldata.z;
+	data->accdata = acc;
+	acc.x = acc.x - data->caldata.x;
+	acc.y = acc.y - data->caldata.y;
+	acc.z = acc.z - data->caldata.z;
 
-	input_report_rel(data->input, REL_X, data->accdata.x);
-	input_report_rel(data->input, REL_Y, data->accdata.y);
-	input_report_rel(data->input, REL_Z, data->accdata.z);
+	if (data->old_timestamp != 0 &&
+	   ((timestamp_new - data->old_timestamp) > ktime_to_ms(data->poll_delay) * 1800000LL)) {
+
+		u64 shift_timestamp = delay >> 1;
+		u64 timestamp = 0ULL;
+
+		for (timestamp = data->old_timestamp + delay; timestamp < timestamp_new - shift_timestamp; timestamp+=delay) {
+			time_hi = (int)((timestamp & TIME_HI_MASK) >> TIME_HI_SHIFT);
+			time_lo = (int)(timestamp & TIME_LO_MASK);
+			input_report_rel(data->input, REL_X, acc.x);
+			input_report_rel(data->input, REL_Y, acc.y);
+			input_report_rel(data->input, REL_Z, acc.z);
+			input_report_rel(data->input, REL_DIAL, time_hi);
+			input_report_rel(data->input, REL_MISC, time_lo);
+			input_sync(data->input);
+		}
+	}
+
+	time_hi = (int)((timestamp_new & TIME_HI_MASK) >> TIME_HI_SHIFT);
+	time_lo = (int)(timestamp_new & TIME_LO_MASK);
+
+	input_report_rel(data->input, REL_X, acc.x);
+	input_report_rel(data->input, REL_Y, acc.y);
+	input_report_rel(data->input, REL_Z, acc.z);
 	input_report_rel(data->input, REL_DIAL, time_hi);
 	input_report_rel(data->input, REL_MISC, time_lo);
 	input_sync(data->input);
+	data->old_timestamp = timestamp_new;
 
 exit:
 	if ((ktime_to_ns(data->poll_delay) * (int64_t)data->time_count)
 		>= ((int64_t)ACCEL_LOG_TIME * NSEC_PER_SEC)) {
 		pr_info("[SENSOR]: %s - x = %d, y = %d, z = %d (ra:%d)\n",
-			__func__, data->accdata.x, data->accdata.y,
-			data->accdata.z, data->recog_flag);
+			__func__, acc.x, acc.y, acc.z, data->recog_flag);
 		data->time_count = 0;
 	} else
 		data->time_count++;
@@ -356,6 +378,7 @@ exit:
 
 static void bma255_set_enable(struct bma255_p *data, int enable)
 {
+	data->old_timestamp = 0LL;
 	if (enable == ON) {
 		hrtimer_start(&data->accel_timer, data->poll_delay,
 		      HRTIMER_MODE_REL);

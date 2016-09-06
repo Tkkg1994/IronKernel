@@ -930,6 +930,10 @@ static int gs_put_char(struct tty_struct *tty, unsigned char ch)
 	unsigned long	flags;
 	int		status;
 
+	if(!port){
+		printk(KERN_ERR "usb: port is NULL !!\n");
+		return 0;
+	}
 	pr_vdebug("gs_put_char: (%d,%p) char=0x%x, called from %p\n",
 		port->port_num, tty, ch, __builtin_return_address(0));
 
@@ -959,6 +963,10 @@ static int gs_write_room(struct tty_struct *tty)
 	unsigned long	flags;
 	int		room = 0;
 
+	if(!port){
+		printk(KERN_ERR "usb: port is NULL !!\n");
+		return 0;
+	}
 	spin_lock_irqsave(&port->port_lock, flags);
 	if (port->port_usb)
 		room = gs_buf_space_avail(&port->port_write_buf);

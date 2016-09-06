@@ -39,7 +39,7 @@
 #include <linux/i2c/twl.h>
 #include <linux/wait.h>
 #include <linux/spi/spi.h>
-#include <asm-generic/uaccess.h>
+#include <asm/uaccess.h>
 #include <linux/irq.h>
 
 #include <asm-generic/siginfo.h>
@@ -64,13 +64,13 @@
 #define BITS_PER_WORD           16
 #define DRDY_IRQ_FLAG	(IRQF_TRIGGER_FALLING)
 
+#define VENDOR		"SYNAPTICS"
+#define CHIP_ID		"RAPTOR"
+
 /* Timeout value for polling DRDY signal assertion */
 #define DRDY_TIMEOUT_MS      40
 
-#ifdef CONFIG_SEC_FACTORY
-#undef ENABLE_SENSORS_FPRINT_SECURE
-#else
-#define ENABLE_SENSORS_FPRINT_SECURE
+#ifdef ENABLE_SENSORS_FPRINT_SECURE
 #define FEATURE_SPI_WAKELOCK
 #endif
 
