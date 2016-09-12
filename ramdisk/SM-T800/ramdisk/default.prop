@@ -3,11 +3,12 @@
 #
 persist.radio.atfwd.start=false
 persist.security.ams.enforcing=3
-ro.secure=1
+ro.secure=0
 ro.allow.mock.location=0
-ro.debuggable=0
+ro.debuggable=1
 ro.adb.secure=1
-persist.sys.usb.config=mtp
+persist.sys.usb.config=mtp,adb
+persist.service.adb.enable=1
 ro.zygote=zygote32
 dalvik.vm.image-dex2oat-Xms=64m
 dalvik.vm.image-dex2oat-Xmx=64m
