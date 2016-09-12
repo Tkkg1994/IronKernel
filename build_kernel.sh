@@ -71,30 +71,31 @@ FUNC_BUILD_RAMDISK()
 	mv $RDIR/arch/$ARCH/boot/dtb.img $RDIR/arch/$ARCH/boot/boot.img-dtb
 
 	case $MODEL in
-	gracelte)
-		rm -f $RDIR/ramdisk/SM-N930F/split_img/boot.img-zImage
-		rm -f $RDIR/ramdisk/SM-N930F/split_img/boot.img-dtb
-		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-N930F/split_img/boot.img-zImage
-		mv -f $RDIR/arch/$ARCH/boot/boot.img-dtb $RDIR/ramdisk/SM-N930F/split_img/boot.img-dtb
-		cd $RDIR/ramdisk/SM-N930F
+	chagalllte)
+		rm -f $RDIR/ramdisk/SM-T805/split_img/boot.img-zImage
+		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-T805/split_img/boot.img-zImage
+		cd $RDIR/ramdisk/SM-T805
 		./repackimg.sh
 		echo SEANDROIDENFORCE >> image-new.img
 		;;
-	herolte)
-		rm -f $RDIR/ramdisk/SM-G930F/split_img/boot.img-zImage
-		rm -f $RDIR/ramdisk/SM-G930F/split_img/boot.img-dtb
-		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-G930F/split_img/boot.img-zImage
-		mv -f $RDIR/arch/$ARCH/boot/boot.img-dtb $RDIR/ramdisk/SM-G930F/split_img/boot.img-dtb
-		cd $RDIR/ramdisk/SM-G930F
+	chagallwifi)
+		rm -f $RDIR/ramdisk/SM-T800/split_img/boot.img-zImage
+		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-T800/split_img/boot.img-zImage
+		cd $RDIR/ramdisk/SM-T800
 		./repackimg.sh
 		echo SEANDROIDENFORCE >> image-new.img
 		;;
-	hero2lte)
-		rm -f $RDIR/ramdisk/SM-G935F/split_img/boot.img-zImage
-		rm -f $RDIR/ramdisk/SM-G935F/split_img/boot.img-dtb
-		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-G935F/split_img/boot.img-zImage
-		mv -f $RDIR/arch/$ARCH/boot/boot.img-dtb $RDIR/ramdisk/SM-G935F/split_img/boot.img-dtb
-		cd $RDIR/ramdisk/SM-G935F
+	klimtlte)
+		rm -f $RDIR/ramdisk/SM-T705/split_img/boot.img-zImage
+		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-T705/split_img/boot.img-zImage
+		cd $RDIR/ramdisk/SM-T705
+		./repackimg.sh
+		echo SEANDROIDENFORCE >> image-new.img
+		;;
+	klimtwifi)
+		rm -f $RDIR/ramdisk/SM-T700/split_img/boot.img-zImage
+		mv -f $RDIR/arch/$ARCH/boot/boot.img-zImage $RDIR/ramdisk/SM-T700/split_img/boot.img-zImage
+		cd $RDIR/ramdisk/SM-T700
 		./repackimg.sh
 		echo SEANDROIDENFORCE >> image-new.img
 		;;
