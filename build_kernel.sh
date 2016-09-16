@@ -68,7 +68,6 @@ FUNC_BUILD_KERNEL()
 FUNC_BUILD_RAMDISK()
 {
 	mv $RDIR/arch/$ARCH/boot/Image $RDIR/arch/$ARCH/boot/boot.img-zImage
-	mv $RDIR/arch/$ARCH/boot/dtb.img $RDIR/arch/$ARCH/boot/boot.img-dtb
 
 	case $MODEL in
 	chagalllte)
