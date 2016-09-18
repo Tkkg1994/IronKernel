@@ -6,7 +6,7 @@ persist.security.ams.enforcing=3
 ro.secure=0
 ro.allow.mock.location=0
 ro.debuggable=1
-ro.adb.secure=1
+ro.adb.secure=0
 persist.sys.usb.config=mtp,adb
 persist.service.adb.enable=1
 ro.zygote=zygote32
@@ -20,6 +20,6 @@ ro.smps.gain.spk=3.0
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
-ro.bootimage.build.date=Wed Aug 10 17:48:49 KST 2016
-ro.bootimage.build.date.utc=1470818929
-ro.bootimage.build.fingerprint=samsung/chagallwifixx/chagallwifi:6.0.1/MMB29K/T800XXU1CPH7:user/test-keys
+ro.bootimage.build.date=Tue Aug 30 15:32:32 KST 2016
+ro.bootimage.build.date.utc=1472538752
+ro.bootimage.build.fingerprint=samsung/chagallwifixx/chagallwifi:6.0.1/MMB29K/T800DDU1CPH7:user/test-keys
