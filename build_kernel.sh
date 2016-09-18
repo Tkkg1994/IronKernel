@@ -13,15 +13,15 @@ INCDIR=$RDIR/include
 
 if [ $MODEL = chagalllte ]
 then
-	KERNEL_DEFCONFIG=ironkernel_chagalllte_defconfig
+	KERNEL_DEFCONFIG=ironstock_chagalllte_defconfig
 else if [ $MODEL = chagallwifi ]
 then
-	KERNEL_DEFCONFIG=ironkernel_chagallwifi_defconfig
+	KERNEL_DEFCONFIG=ironstock_chagallwifi_defconfig
 else if [ $MODEL = klimtlte ]
 then
-	KERNEL_DEFCONFIG=ironkernel_klimtlte_defconfig
+	KERNEL_DEFCONFIG=ironstock_klimtlte_defconfig
 else [ $MODEL = klimtwifi ]
-	KERNEL_DEFCONFIG=ironkernel_klimtwifi_defconfig
+	KERNEL_DEFCONFIG=ironstock_klimtwifi_defconfig
 fi
 fi
 fi
