@@ -3078,7 +3078,6 @@ CONFIG_DMA_ENGINE=y
 #
 # DMA Clients
 #
-# CONFIG_NET_DMA is not set
 # CONFIG_ASYNC_TX_DMA is not set
 # CONFIG_DMATEST is not set
 # CONFIG_AUXDISPLAY is not set
