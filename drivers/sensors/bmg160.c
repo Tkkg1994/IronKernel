@@ -45,6 +45,7 @@
 #define SELFTEST_LIMITATION_OF_ERROR       5250
 
 #define BMG160_DEFAULT_DELAY               200000000LL
+#define BMG160_MIN_DELAY                   5000000LL
 
 #define	BMG160_CHIP_ID                     0x0F
 
@@ -569,6 +570,11 @@ static ssize_t bmg160_delay_store(struct device *dev,
 	} else if (ktime_to_ns(data->poll_delay) == delay) {
 		goto exit;
 	}
+
+	if(delay > BMG160_DEFAULT_DELAY)
+		delay = BMG160_DEFAULT_DELAY;
+	else if(delay < BMG160_MIN_DELAY)
+		delay = BMG160_MIN_DELAY;
 
 	if (delay <= 5000000LL)
 		bmg160_set_bw(data, BMG160_BW_116Hz);

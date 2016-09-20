@@ -2845,6 +2845,8 @@ void s5p_mfc_try_run(struct s5p_mfc_dev *dev)
 		return;
 	}
 	spin_unlock_irq(&dev->condlock);
+	if (ctx->state == MFCINST_RUNNING)
+		s5p_mfc_clean_ctx_int_flags(ctx);
 
 	mfc_debug(1, "New context: %d\n", new_ctx);
 	mfc_debug(1, "Seting new context to %p\n", ctx);

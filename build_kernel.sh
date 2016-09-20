@@ -5,7 +5,6 @@ export MODEL=chagalllte
 export ARCH=arm
 export BUILD_CROSS_COMPILE=../Toolchain/Toolchain_5.3/bin/arm-cortex-linux-gnueabi-
 export BUILD_JOB_NUMBER=`grep processor /proc/cpuinfo|wc -l`
-
 RDIR=$(pwd)
 OUTDIR=$RDIR/arch/$ARCH/boot
 DTSDIR=$RDIR/arch/$ARCH/boot/dts

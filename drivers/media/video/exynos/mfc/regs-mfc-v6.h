@@ -138,6 +138,7 @@ static inline unsigned int r2h_bits(int cmd)
 
 #define S5P_FIMV_ERROR_CODE			0xF074
 #define S5P_FIMV_ERR_WARNINGS_START		160
+#define S5P_FIMV_ERR_SYNC_POINT_NOT_RECEIVED	190
 #define S5P_FIMV_ERR_WARNINGS_END		222
 #define S5P_FIMV_ERR_DEC_MASK			0xFFFF
 #define S5P_FIMV_ERR_DEC_SHIFT			0

@@ -23,5 +23,5 @@
 4. How to make .tar binary for downloading into target.
 	- change current directory to Kernel/arch/arm/boot
 	- type following command
-	$ tar cvf SM-T805_EUR_MM_XX.tar zImage
+	$ tar cvf SM-T800_SEA_MM_DX.tar zImage
 #################################################################################
