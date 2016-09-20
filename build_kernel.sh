@@ -33,6 +33,7 @@ FUNC_CLEAN_DTB()
 		echo "rm files in : "$RDIR/arch/$ARCH/boot/dts/*.dtb""
 		rm $RDIR/arch/$ARCH/boot/dts/*.dtb
 		rm $RDIR/arch/$ARCH/boot/dtb/*.dtb
+		rm $RDIR/arch/$ARCH/boot/Image
 		rm $RDIR/arch/$ARCH/boot/boot.img-dtb
 		rm $RDIR/arch/$ARCH/boot/boot.img-zImage
 	fi
@@ -66,7 +67,7 @@ FUNC_BUILD_KERNEL()
 
 FUNC_BUILD_RAMDISK()
 {
-	mv $RDIR/arch/$ARCH/boot/Image $RDIR/arch/$ARCH/boot/boot.img-zImage
+	mv $RDIR/arch/$ARCH/boot/zImage $RDIR/arch/$ARCH/boot/boot.img-zImage
 
 	case $MODEL in
 	chagalllte)
