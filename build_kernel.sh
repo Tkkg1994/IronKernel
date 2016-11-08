@@ -1,7 +1,7 @@
 #!/bin/bash
 # kernel build script by Tkkg1994 v0.6 (optimized from apq8084 kernel source)
 
-export MODEL=chagallwifi
+export MODEL=chagalllte
 export ARCH=arm
 export BUILD_CROSS_COMPILE=../Toolchain/Toolchain_5.3/bin/arm-cortex-linux-gnueabi-
 export BUILD_JOB_NUMBER=`grep processor /proc/cpuinfo|wc -l`
