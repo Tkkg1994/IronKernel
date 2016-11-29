@@ -20,6 +20,6 @@ ro.smps.gain.spk=3.0
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
-ro.bootimage.build.date=Tue Aug 30 15:32:32 KST 2016
-ro.bootimage.build.date.utc=1472538752
-ro.bootimage.build.fingerprint=samsung/chagallwifixx/chagallwifi:6.0.1/MMB29K/T800DDU1CPH7:user/test-keys
+ro.bootimage.build.date=Tue Oct 4 23:01:55 KST 2016
+ro.bootimage.build.date.utc=1475589715
+ro.bootimage.build.fingerprint=samsung/chagallwifixx/chagallwifi:6.0.1/MMB29K/T800XXU1CPJ1:user/test-keys
