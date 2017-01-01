@@ -21,6 +21,6 @@ ro.smps.gain.spk=3.0
 #
 # BOOTIMAGE_BUILD_PROPERTIES
 #
-ro.bootimage.build.date=Thu Oct 27 14:53:05 KST 2016
-ro.bootimage.build.date.utc=1477547585
-ro.bootimage.build.fingerprint=samsung/chagallltexx/chagalllte:6.0.1/MMB29K/T805XXU1CPJ6:user/test-keys
+ro.bootimage.build.date=Sat Nov 12 15:11:57 KST 2016
+ro.bootimage.build.date.utc=1478931117
+ro.bootimage.build.fingerprint=samsung/chagallltexx/chagalllte:6.0.1/MMB29K/T805XXU1CPK2:user/test-keys

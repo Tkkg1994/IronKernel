@@ -1,0 +1,25 @@
+#
+# ADDITIONAL_DEFAULT_PROPERTIES
+#
+persist.radio.atfwd.start=false
+persist.security.ams.enforcing=3
+ro.secure=0
+ro.allow.mock.location=0
+ro.debuggable=1
+ro.adb.secure=0
+persist.sys.usb.config=mtp,adb
+persist.service.adb.enable=1
+ro.zygote=zygote32
+dalvik.vm.image-dex2oat-Xms=64m
+dalvik.vm.image-dex2oat-Xmx=64m
+dalvik.vm.dex2oat-Xms=64m
+dalvik.vm.dex2oat-Xmx=512m
+ro.dalvik.vm.native.bridge=0
+debug.atrace.tags.enableflags=0
+ro.smps.gain.spk=3.0
+#
+# BOOTIMAGE_BUILD_PROPERTIES
+#
+ro.bootimage.build.date=Thu Nov 24 20:12:10 KST 2016
+ro.bootimage.build.date.utc=1479985930
+ro.bootimage.build.fingerprint=samsung/klimtwifixx/klimtwifi:6.0.1/MMB29K/T700XXU1CPK5:user/test-keys
