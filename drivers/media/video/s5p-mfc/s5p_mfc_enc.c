@@ -1684,7 +1684,24 @@ static int s5p_mfc_stop_streaming(struct vb2_queue *q)
 		INIT_LIST_HEAD(&ctx->src_queue);
 		ctx->src_queue_cnt = 0;
 	}
+
+	if (aborted)
+		ctx->state = MFCINST_RUNNING;
+
 	spin_unlock_irqrestore(&dev->irqlock, flags);
+
+	if (s5p_mfc_enc_ctx_ready(ctx)) {
+		spin_lock_irq(&dev->condlock);
+		set_bit(ctx->num, &dev->ctx_work_bits);
+	} else {
+		spin_lock_irq(&dev->condlock);
+		clear_bit(ctx->num, &dev->ctx_work_bits);
+	}
+
+	if (dev->ctx_work_bits)
+		queue_work(dev->sched_wq, &dev->sched_work);
+	spin_unlock_irq(&dev->condlock);
+
 	return 0;
 }
 

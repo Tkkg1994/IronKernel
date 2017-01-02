@@ -45,6 +45,7 @@
 #define MAX_ACCEL_1G			1024
 
 #define BMA255_DEFAULT_DELAY            200000000LL
+#define BMA255_MIN_DELAY                5000000LL
 #define BMA255_CHIP_ID                  0xFA
 
 #define CHIP_ID_RETRIES                 3
@@ -457,6 +458,11 @@ static ssize_t bma255_delay_store(struct device *dev,
 	} else if (ktime_to_ns(data->poll_delay) == delay) {
 		goto exit;
 	}
+
+	if(delay > BMA255_DEFAULT_DELAY)
+		delay = BMA255_DEFAULT_DELAY;
+	else if(delay < BMA255_MIN_DELAY)
+		delay = BMA255_MIN_DELAY;
 
 	if (delay <= 3000000LL)
 		bma255_set_bandwidth(data, BMA255_BW_500HZ);
